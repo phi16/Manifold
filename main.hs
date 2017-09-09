@@ -19,7 +19,7 @@ main = do
 type State = (World R, World R)
 
 initial :: IO State
-initial = return (World (-1) 0 0, normalize $ World 0.1 0.1 (-0.9))
+initial = return (World (-1) 1 0, normalize $ World 0.1 0.1 (-0.9))
 
 step :: State -> IO State
 step v@(coord@(World x y z), veloc) = do
@@ -34,7 +34,8 @@ step v@(coord@(World x y z), veloc) = do
     gradP' = gradient coord'
     velDir = normalize veloc
     velLen = length veloc
-    adj = - (dot veloc gradP') / (1 - dot gradP gradP')
+    gradD = dot gradP gradP'
+    adj = if gradD > 0.9999 then 0 else - (dot veloc gradP') / (1 - gradD)
     velDir' = veloc + (gradP' - gradP) * scale adj
     veloc' = scale velLen * normalize velDir'
   return (coord', veloc')

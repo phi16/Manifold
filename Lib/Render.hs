@@ -29,9 +29,10 @@ instance Num (Var String) where
 instance Fractional (Var String) where
   x / y = C ["(",x,")/(",y,")"]
   recip x = C ["1./(",x,")"]
-  fromRational p = S $ show p
+  fromRational p = S $ show (fromRational p :: Double)
 
 instance Floating (Var String) where
+  sqrt x = C ["sqrt(",x,")"]
 
 argument :: World (Var String)
 argument = World (S "x") (S "y") (S "z")

@@ -45,8 +45,10 @@ window.addEventListener("load",_=>{
     }
     void main(void){
       vec2 uv = coord/resolution.y;
-      vec3 cur = vec3(0,0,-5.);
+      vec3 cur = vec3(0,4,-4.);
       vec3 dir = normalize(vec3(uv.x,uv.y,4));
+      float t = 0.8;
+      dir.yz *= mat2(cos(t),-sin(t),sin(t),cos(t));
       // Raymarch
       vec3 pos, nrm;
       float d = 0.;
@@ -62,7 +64,7 @@ window.addEventListener("load",_=>{
         d += f;
       }
       // Discontinuity reduction
-      for(int i=0;i<1;i++){
+      for(int i=0;i<0;i++){
         nrm = gradient(pos);
         d += field(pos)/length(nrm) - 0.01*d;
       }
@@ -79,9 +81,10 @@ window.addEventListener("load",_=>{
         color = vec3(1);
       }else{
         nrm = normalize(nrm);
+        nrm.yz *= mat2(cos(-t),-sin(-t),sin(-t),cos(-t));
         color = vec3(-nrm.z*0.5+0.5);
         if(-nrm.z<0.4){
-          color = vec3(0.3);
+          //color = vec3(0.3);
         }
       }
       if(length(pos-circle) < 0.2){

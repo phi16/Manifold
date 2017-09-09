@@ -5,6 +5,7 @@
 
 module Lib.World where
 
+import Prelude hiding (length)
 import Lib.Util
 import Lib.AD
 import Data.Monoid
@@ -46,7 +47,11 @@ instance Traversable World where
   traverse f (World x y z) = World <$> f x <*> f y <*> f z
 
 field :: Field a => World a -> a
-field p = norm p - 1
+-- field p = length p - 1 -- Sphere
+field (World x y z) = let
+    qx = sqrt (x^2+z^2) - 0.8
+    qy = y
+  in sqrt (qx^2 + qy^2) - 0.5
 
 gradient :: Field a => World a -> World a
 gradient = grad field

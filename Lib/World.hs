@@ -58,3 +58,6 @@ gradient = grad field
 
 distance :: Field a => World a -> a
 distance p = field p / norm (gradient p)
+
+normal :: Field a => World a -> World a
+normal p = normalize $ gradient p

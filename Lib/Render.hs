@@ -32,7 +32,24 @@ instance Fractional (Var String) where
   fromRational p = S $ show (fromRational p :: Double)
 
 instance Floating (Var String) where
+  pi = "pi"
+  exp x = C ["exp(",x,")"]
+  log x = C ["log(",x,")"]
   sqrt x = C ["sqrt(",x,")"]
+  x ** y = C ["pow(",x,",",y,")"]
+  logBase b x = C ["log(",x,")/log(",b,")"]
+  sin x = C ["sin(",x,")"]
+  cos x = C ["cos(",x,")"]
+  tan x = C ["tan(",x,")"]
+  asin x = C ["asin(",x,")"]
+  acos x = C ["acos(",x,")"]
+  atan x = C ["atan(",x,")"]
+  sinh x = C ["sinh(",x,")"]
+  cosh x = C ["cosh(",x,")"]
+  tanh x = C ["tanh(",x,")"]
+  asinh x = C ["asinh(",x,")"]
+  acosh x = C ["acosh(",x,")"]
+  atanh x = C ["atanh(",x,")"]
 
 argument :: World (Var String)
 argument = World (S "x") (S "y") (S "z")

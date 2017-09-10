@@ -71,9 +71,15 @@ window.addEventListener("load",_=>{
       pos = cur+dir*d;
       nrm = gradient(pos);
 
+      // sphere
       //float theta = coord.x/resolution.x*pi;
       //float phi = coord.y/resolution.y*pi/2.;
-      //pos = vec3(cos(phi)*cos(theta),cos(phi)*sin(theta),sin(phi));
+      //pos = vec3(cos(phi)*cos(theta),sin(phi),cos(phi)*sin(theta));
+
+      // torus
+      //float theta = coord.x/resolution.x*pi;
+      //float phi = coord.y/resolution.y*pi;
+      //pos = vec3((0.8+0.5*cos(phi))*cos(theta),0.5*sin(phi),(0.8+0.5*cos(phi))*sin(theta));
 
       // Coloring
       vec3 color;

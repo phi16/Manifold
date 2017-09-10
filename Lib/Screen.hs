@@ -16,7 +16,7 @@ scrH :: R
 scrH = constant "scrH"
 refresh :: IO ()
 refresh = ffi "refresh"
-draw :: R -> R -> R -> IO ()
+draw :: R -> R -> R -> R -> R -> R -> IO ()
 draw = ffi "draw"
 compile :: JSString -> JSString -> IO ()
 compile = ffi "compile"

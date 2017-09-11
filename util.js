@@ -44,23 +44,13 @@ window.addEventListener("load",_=>{
       float z = p.z;
       return ` + g + `;
     }
-    mat3 lookAt(vec3 look, vec3 up){
-      vec3 z = normalize(look);
-      vec3 x = normalize(cross(up,z));
-      vec3 y = cross(z,x);
-      return mat3(x,y,z);
-    }
     void main(void){
       vec2 uv = coord/resolution.y;
       vec3 cur = vec3(0,4,-4.);
-      vec3 dir = normalize(vec3(uv.x,uv.y,6));
+      vec3 dir = normalize(vec3(uv.x,uv.y,4));
 
-      vec3 lookDir = -normalize(gradient(circle));
-      cur = circle - lookDir * 10.;
-      dir = lookAt(lookDir,rotAxis)*dir;
-
-      //float t = 0.8;
-      //dir.yz *= mat2(cos(t),-sin(t),sin(t),cos(t));
+      float t = 0.8;
+      dir.yz *= mat2(cos(t),-sin(t),sin(t),cos(t));
       // Raymarch
       vec3 pos, nrm;
       float d = 0.;
@@ -99,19 +89,17 @@ window.addEventListener("load",_=>{
         color = vec3(1);
       }else{
         nrm = normalize(nrm);
-        //nrm.yz *= mat2(cos(-t),-sin(-t),sin(-t),cos(-t));
-        //color = vec3(-nrm.z*0.5+0.5);
-        color = vec3(1);
-        color *= pos*0.2+0.8;
+        nrm.yz *= mat2(cos(-t),-sin(-t),sin(-t),cos(-t));
+        color = vec3(-nrm.z*0.5+0.5);
       }
       if(length(pos-circle) < 0.2){
-        color *= vec3(0.8);
+        color *= vec3(1,0.9,0.8);
         vec3 factor = vec3(1);
         if(length(pos-circle) > 0.18){
-          factor = vec3(0.5);
+          factor = vec3(1,0.5,0);
         }
         if(abs(dot(pos-circle,cross(nrm,rotAxis))) < 0.006 && dot(pos-circle,rotAxis) < 0.008){
-          factor = vec3(0.5);
+          factor = vec3(1,0.5,0);
         }
         color *= factor;
       }

@@ -36,7 +36,7 @@ step v@(coord@(World x y z), veloc, rotAx@(World rx ry rz)) = do
     velLen = length veloc
     adjV = - dot veloc gradP'
     velDir' = veloc + gradP' * scale adjV
-    veloc' = scale velLen * normalize velDir'
+    veloc' = if velLen < 0.0001 then 0 else scale velLen * normalize velDir'
     adjR = - dot rotAx gradP'
     rotAx' = normalize $ rotAx + gradP' * scale adjR
   return (coord', veloc', rotAx')

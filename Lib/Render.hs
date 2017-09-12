@@ -52,12 +52,13 @@ instance Floating (Var String) where
   atanh x = C ["atanh(",x,")"]
 
 argument :: World (Var String)
-argument = World (S "x") (S "y") (S "z")
+argument = fmap S $ World "x" "y" "z"
 
 fieldStr :: JSString
 fieldStr = toJSStr $ fold $ field argument
 
 gradStr :: JSString
 gradStr = toJSStr $ let
-    World x y z = gradient argument
-  in fold $ C ["vec3(",x,",",y,",",z,")"]
+    g = gradient argument
+    gs = C $ intersperse "," $ toList g
+  in fold $ C $ ["vec3(",gs,")"]

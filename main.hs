@@ -19,8 +19,8 @@ main = do
 type State = (World R, World R, World R)
 
 initial :: IO State
-initial = return (World (-1.3) 0 0, normalize $ World 0 1 0.2, World 0 0 1)
 -- initial = return (World (-1) 0 0, normalize $ World 0 (-1) 1, World 0 0 1)
+initial = return (World (-1.3) 0 0, normalize $ World 0 1 0.2, World 0 0 1)
 
 step :: State -> IO State
 step v@(coord@(World x y z), veloc, rotAx@(World rx ry rz)) = do

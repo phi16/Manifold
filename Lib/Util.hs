@@ -13,7 +13,8 @@ module Lib.Util (
   R,
   (+~), (*~), fmod,
   io,
-  V3(..), Space(..), Arith(..), Linear, Euclidean,
+  V1(..), V2(..), V3(..), V4(..),
+  Space(..), Arith(..), Linear, Euclidean,
   Field(..)
 ) where
 
@@ -41,10 +42,14 @@ fmod e m = e + (-1) * fromIntegral (floor (e/m)) * m
 io :: MonadIO m => IO a -> m a
 io = liftIO
 
-class V3 a b | a -> b where
+class V1 a b | a -> b where
   x :: Lens' a b
+class V1 a b => V2 a b | a -> b where
   y :: Lens' a b
+class V2 a b => V3 a b | a -> b where
   z :: Lens' a b
+class V3 a b => V4 a b | a -> b where
+  w :: Lens' a b
 
 class Space f where
   basis :: Num a => f (f a)
@@ -60,5 +65,5 @@ class (Functor f, Space f) => Arith f where
   normalize x = let l = length x in fmap (/l) x
 
 type Field a = Floating a
-type Linear f a = (Traversable f, Applicative f, Space f, Field a)
+type Linear f a = (Applicative f, Space f, Field a)
 type Euclidean f a = (Linear f a, Arith f)

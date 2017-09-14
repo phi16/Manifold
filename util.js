@@ -6,11 +6,28 @@ window.addEventListener("load",_=>{
   scrH = cvs.height;
 
   const gl = cvs.getContext("webgl");
+  const extFloat = gl.getExtension('OES_texture_float');
+  if(extFloat == null){
+    console.err(":P (float tex)");
+    return;
+  }
   gl.disable(gl.BLEND);
   gl.disable(gl.DEPTH_TEST);
   gl.disable(gl.CULL_FACE);
   gl.viewport(0,0,scrW,scrH);
   gl.clearColor(0,0,0.5,1);
+
+  const frameBuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
+  const worldTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,worldTexture);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,scrW,scrH,0,gl.RGBA,gl.FLOAT,null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,worldTexture,0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 
   const verts = [-1,-1,-1,1,1,-1,1,1];
   const vbo = gl.createBuffer();
@@ -110,7 +127,7 @@ window.addEventListener("load",_=>{
       }else{
         color = pos*0.2+0.8;
       }
-      gl_FragColor = vec4(color,1.);
+      gl_FragColor = vec4(color,d);
     }
   `;
 
@@ -119,14 +136,16 @@ window.addEventListener("load",_=>{
     const float pi = 3.1415926535;
     attribute vec3 position;
     varying vec3 coord;
+    varying vec3 screen;
     uniform vec3 camera;
     uniform mat3 transform;
     uniform float fov;
     void main(void){
       coord = position;
       vec3 p = transform * (position - camera);
-      p.xy /= tan(fov*pi/180.);
       p.x *= 3./4.;
+      p.xy /= tan(fov*pi/180.);
+      screen = p;
       gl_Position = vec4(p,p.z);
     }
   `;
@@ -134,15 +153,42 @@ window.addEventListener("load",_=>{
     precision mediump float;
     const float pi = 3.1415926535;
     varying vec3 coord;
+    varying vec3 screen;
+    uniform vec3 camera;
+    uniform sampler2D worldTex;
     void main(void){
+      vec2 texCoord = screen.xy / screen.z * 0.5 + 0.5;
+      float depth = texture2D(worldTex,texCoord).w;
+      float surfaceDepth = length(coord - camera);
+      if(depth < surfaceDepth - 0.2)discard;
       gl_FragColor = vec4(coord*0.5+0.5,1);
     }
   `;
 
-  let program, tprogram;
+  const bgvsSource = `
+    precision mediump float;
+    attribute vec2 position;
+    varying vec2 coord;
+    void main(void){
+      coord = position * 0.5 + 0.5;
+      gl_Position = vec4(position,0.,1.);
+    }
+  `;
+  const bgfsSource = `
+    precision mediump float;
+    varying vec2 coord;
+    uniform sampler2D worldTex;
+    void main(void){
+      gl_FragColor = texture2D(worldTex,coord);
+      gl_FragColor.w = 1.;
+    }
+  `;
+
+  let program, tprogram, bgprogram;
   let resLocation, circleLocation, rotAxisLocation;
   let camLocation, transLocation, fovLocation;
   let tcamLocation, ttransLocation, tfovLocation;
+  let worldTexLocation;
 
   let camera = [0,4,-4];
   let adir = 0.8;
@@ -176,7 +222,7 @@ window.addEventListener("load",_=>{
       }
       return pr;
     }
-    // Field rendering
+    // Field rendering (to framebuffer)
     const vs = makeShader(gl.VERTEX_SHADER,vsSource);
     const fs = makeShader(gl.FRAGMENT_SHADER,fsSource(field,grad));
     if(!vs || !fs)return;
@@ -194,6 +240,23 @@ window.addEventListener("load",_=>{
 
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.bindAttribLocation(program,0,"position");
+    gl.enableVertexAttribArray(0);
+
+    // World rendering
+    const bgvs = makeShader(gl.VERTEX_SHADER,bgvsSource);
+    const bgfs = makeShader(gl.FRAGMENT_SHADER,bgfsSource);
+    if(!bgvs || !bgfs)return;
+    bgprogram = makeProgram(bgvs,bgfs);
+    if(!bgprogram)return;
+    gl.useProgram(bgprogram);
+
+    gl.bindTexture(gl.TEXTURE_2D,worldTexture);
+    gl.activeTexture(gl.TEXTURE0);
+    worldTexLocation = gl.getUniformLocation(bgprogram,"worldTex");
+    gl.uniform1i(worldTexLocation,0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+    gl.bindAttribLocation(bgprogram,0,"position");
     gl.enableVertexAttribArray(0);
 
     // Triangle rendering
@@ -214,6 +277,7 @@ window.addEventListener("load",_=>{
   };
   draw = (x,y,z,rx,ry,rz)=>{
     if(!program)return;
+    gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
     gl.useProgram(program);
     gl.uniform2f(resLocation,scrW,scrH);
     gl.uniform3f(circleLocation,x,y,z);
@@ -221,6 +285,13 @@ window.addEventListener("load",_=>{
     gl.uniform3f(camLocation,camera[0],camera[1],camera[2]);
     gl.uniformMatrix3fv(transLocation,false,transform);
     gl.uniform1f(fovLocation,fov);
+    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+    gl.useProgram(bgprogram);
+    // texture set
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);

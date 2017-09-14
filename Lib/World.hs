@@ -35,6 +35,7 @@ instance Space World where
 instance Arith World where
   scale = pure
   dot (World x1 y1 z1) (World x2 y2 z2) = x1*x2+y1*y2+z1*z2
+  cross (World x1 y1 z1) (World x2 y2 z2) = World (y1*z2-y2*z1) (z1*x2-z2*x1) (x1*y2-x2*y1)
 
 instance V1 (World a) a where
   x = lens (\(World x _ _) -> x) $ \(World _ y z) v -> World v y z

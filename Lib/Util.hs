@@ -11,7 +11,7 @@ module Lib.Util (
   module Lens.Micro.GHC,
   module Lens.Micro.Mtl,
   R,
-  (+~), (*~), fmod,
+  (+~), (*~), fmod, (??),
   io,
   V1(..), V2(..), V3(..), V4(..),
   Space(..), Arith(..), Linear, Euclidean,
@@ -42,6 +42,9 @@ fmod e m = e + (-1) * fromIntegral (floor (e/m)) * m
 io :: MonadIO m => IO a -> m a
 io = liftIO
 
+(??) :: (a -> b -> c) -> b -> a -> c
+(f ?? y) x = f x y
+
 class V1 a b | a -> b where
   x :: Lens' a b
 class V1 a b => V2 a b | a -> b where
@@ -57,6 +60,7 @@ class Space f where
 class (Functor f, Space f) => Arith f where
   scale :: Field a => a -> f a
   dot :: Field a => f a -> f a -> a
+  cross :: Field a => f a -> f a -> f a
   norm :: Field a => f a -> a
   norm x = dot x x
   length :: Field a => f a -> a

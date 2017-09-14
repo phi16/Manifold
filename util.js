@@ -1,19 +1,27 @@
 let scrW = 0, scrH = 0;
-let refresh = _=>_, compile = _=>_, draw = _=>_;
+let refresh = _=>_, compile = _=>_, draw = _=>_, triangle = _=>_;
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
   scrW = cvs.width;
   scrH = cvs.height;
 
   const gl = cvs.getContext("webgl");
+  gl.disable(gl.BLEND);
+  gl.disable(gl.DEPTH_TEST);
+  gl.disable(gl.CULL_FACE);
+  gl.viewport(0,0,scrW,scrH);
+  gl.clearColor(0,0,0.5,1);
+
   const verts = [-1,-1,-1,1,1,-1,1,1];
   const vbo = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.STATIC_DRAW);
-  gl.disable(gl.BLEND);
-  gl.disable(gl.DEPTH_TEST);
-  gl.viewport(0,0,scrW,scrH);
-  gl.clearColor(0,0,0,1);
+
+  const tverts = new Float32Array(24*(2*6-1)*3*3);
+  const tvbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
+  gl.bufferData(gl.ARRAY_BUFFER,tverts,gl.DYNAMIC_DRAW);
+  let tIndex = 0;
 
   const vsSource = `
     precision mediump float;
@@ -55,10 +63,6 @@ window.addEventListener("load",_=>{
 
       vec3 cur = vec3(0,4,-4.);
       vec3 dir = normalize(vec3(uv.x,uv.y,4));
-
-      //vec3 lookDir = -normalize(gradient(circle));
-      //vec3 cur = circle - lookDir * 4.;
-      //vec3 dir = lookAt(lookDir,rotAxis)*dir;
 
       float t = 0.8;
       dir.yz *= mat2(cos(t),-sin(t),sin(t),cos(t));
@@ -126,19 +130,30 @@ window.addEventListener("load",_=>{
     }
   `;
 
-  let program;
-  let resLocation, posLocation;
-  let circleLocation, rotAxisLocation;
+  const tvsSource = `
+    precision mediump float;
+    attribute vec3 position;
+    varying vec3 coord;
+    void main(void){
+      coord = position;
+      gl_Position = vec4(position.xy,0,1);
+    }
+  `;
+  const tfsSource = `
+    precision mediump float;
+    const float pi = 3.1415926535;
+    varying vec3 coord;
+    void main(void){
+      gl_FragColor = vec4(coord*0.5+0.5,1);
+    }
+  `;
+
+  let program, tprogram;
+  let resLocation, circleLocation, rotAxisLocation;
 
   refresh = _=>{
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.uniform2f(resLocation,scrW,scrH);
-  };
-  draw = (x,y,z,rx,ry,rz)=>{
-    if(!program)return;
-    gl.uniform3f(circleLocation,x,y,z);
-    gl.uniform3f(rotAxisLocation,rx,ry,rz);
-    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    tIndex = 0;
   };
   compile = (field,grad)=>{
     function makeShader(type,source){
@@ -162,19 +177,62 @@ window.addEventListener("load",_=>{
       }
       return pr;
     }
+    // Field rendering
     const vs = makeShader(gl.VERTEX_SHADER,vsSource);
     const fs = makeShader(gl.FRAGMENT_SHADER,fsSource(field,grad));
     if(!vs || !fs)return;
     program = makeProgram(vs,fs);
-    gl.useProgram(program);
     if(!program)return;
+    gl.useProgram(program);
 
     resLocation = gl.getUniformLocation(program,"resolution");
     circleLocation = gl.getUniformLocation(program,"circle");
     rotAxisLocation = gl.getUniformLocation(program,"rotAxis");
 
-    posLocation = gl.getAttribLocation(program,"position");
-    gl.enableVertexAttribArray(posLocation);
-    gl.vertexAttribPointer(posLocation,2,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+    gl.bindAttribLocation(program,0,"position");
+    gl.enableVertexAttribArray(0);
+
+    // Triangle rendering
+    const tvs = makeShader(gl.VERTEX_SHADER,tvsSource);
+    const tfs = makeShader(gl.FRAGMENT_SHADER,tfsSource);
+    if(!tvs || !tfs)return;
+    tprogram = makeProgram(tvs,tfs);
+    if(!tprogram)return;
+    gl.useProgram(tprogram);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
+    gl.bindAttribLocation(tprogram,0,"position");
+    gl.enableVertexAttribArray(0);
+  };
+  draw = (x,y,z,rx,ry,rz)=>{
+    if(!program)return;
+    gl.useProgram(program);
+    gl.uniform2f(resLocation,scrW,scrH);
+    gl.uniform3f(circleLocation,x,y,z);
+    gl.uniform3f(rotAxisLocation,rx,ry,rz);
+    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  };
+  triangle = (x1,y1,z1,x2,y2,z2,x3,y3,z3)=>{
+    tverts[tIndex+0] = x1;
+    tverts[tIndex+1] = y1;
+    tverts[tIndex+2] = z1;
+    tverts[tIndex+3] = x2;
+    tverts[tIndex+4] = y2;
+    tverts[tIndex+5] = z2;
+    tverts[tIndex+6] = x3;
+    tverts[tIndex+7] = y3;
+    tverts[tIndex+8] = z3;
+    tIndex += 9;
+  };
+  drawTriangles = _=>{
+    if(!tprogram)return;
+    gl.useProgram(tprogram);
+    gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
+    gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
+    gl.drawArrays(gl.TRIANGLES,0,24*(2*6-1)*3);
   };
 });

@@ -18,6 +18,10 @@ refresh :: IO ()
 refresh = ffi "refresh"
 draw :: R -> R -> R -> R -> R -> R -> IO ()
 draw = ffi "draw"
+triangle :: R -> R -> R -> R -> R -> R -> R -> R -> R -> IO ()
+triangle = ffi "triangle"
+drawTriangles :: IO ()
+drawTriangles = ffi "drawTriangles"
 compile :: JSString -> JSString -> IO ()
 compile = ffi "compile"
 

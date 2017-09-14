@@ -28,6 +28,7 @@ window.addEventListener("load",_=>{
     attribute vec2 position;
     varying vec2 coord;
     uniform vec2 resolution;
+
     void main(void){
       coord = position * resolution;
       gl_Position = vec4(position,0.,1.);
@@ -38,6 +39,10 @@ window.addEventListener("load",_=>{
     const float pi = 3.1415926535;
     varying vec2 coord;
     uniform vec2 resolution;
+    uniform vec3 camera;
+    uniform mat3 transform;
+    uniform float fov;
+
     uniform vec3 circle;
     uniform vec3 rotAxis;
     float field(vec3 p){
@@ -61,11 +66,10 @@ window.addEventListener("load",_=>{
     void main(void){
       vec2 uv = coord/resolution.y;
 
-      vec3 cur = vec3(0,4,-4.);
-      vec3 dir = normalize(vec3(uv.x,uv.y,4));
+      vec3 cur = camera;
+      vec3 dir = normalize(vec3(uv.x,uv.y,1./tan(fov*pi/180.)));
+      dir = transform * dir;
 
-      float t = 0.8;
-      dir.yz *= mat2(cos(t),-sin(t),sin(t),cos(t));
       // Raymarch
       vec3 pos, nrm;
       float d = 0.;
@@ -106,37 +110,24 @@ window.addEventListener("load",_=>{
       }else{
         color = pos*0.2+0.8;
       }
-      vec3 ax = rotAxis;
-      vec3 ay = cross(rotAxis,normalize(gradient(circle)));
-      for(int d=0;d<24;d++){
-        vec3 po = circle;
-        float a = float(d)/24.*pi*2.;
-        vec3 di = ax*cos(a) + ay*sin(a);
-        for(int i=0;i<6;i++){
-          if(length(pos-po) < 0.01) color = vec3(0,0.5,0.5);
-          po += di * 0.055 * (1. + 1./float(i+1));
-          vec3 nr = gradient(po);
-          float nd = length(nr);
-          float dp = field(po) / nd;
-          po -= dp * (nr/nd);
-
-          vec3 gr = gradient(po);
-          float adj = -dot(di,gr);
-          di += gr * adj;
-          di = normalize(di);
-        }
-      }
       gl_FragColor = vec4(color,1.);
     }
   `;
 
   const tvsSource = `
     precision mediump float;
+    const float pi = 3.1415926535;
     attribute vec3 position;
     varying vec3 coord;
+    uniform vec3 camera;
+    uniform mat3 transform;
+    uniform float fov;
     void main(void){
       coord = position;
-      gl_Position = vec4(position.xy,0,1);
+      vec3 p = transform * (position - camera);
+      p.xy /= tan(fov*pi/180.);
+      p.x *= 3./4.;
+      gl_Position = vec4(p,p.z);
     }
   `;
   const tfsSource = `
@@ -150,6 +141,14 @@ window.addEventListener("load",_=>{
 
   let program, tprogram;
   let resLocation, circleLocation, rotAxisLocation;
+  let camLocation, transLocation, fovLocation;
+  let tcamLocation, ttransLocation, tfovLocation;
+
+  let camera = [0,4,-4];
+  let adir = 0.8;
+  let transform = [1,0,0,0,Math.cos(adir),Math.sin(adir),0,-Math.sin(adir),Math.cos(adir)];
+  let transformI = [1,0,0,0,Math.cos(adir),-Math.sin(adir),0,Math.sin(adir),Math.cos(adir)];
+  let fov = 30/2;
 
   refresh = _=>{
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -189,6 +188,10 @@ window.addEventListener("load",_=>{
     circleLocation = gl.getUniformLocation(program,"circle");
     rotAxisLocation = gl.getUniformLocation(program,"rotAxis");
 
+    camLocation = gl.getUniformLocation(program,"camera");
+    transLocation = gl.getUniformLocation(program,"transform");
+    fovLocation = gl.getUniformLocation(program,"fov");
+
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.bindAttribLocation(program,0,"position");
     gl.enableVertexAttribArray(0);
@@ -201,6 +204,10 @@ window.addEventListener("load",_=>{
     if(!tprogram)return;
     gl.useProgram(tprogram);
 
+    tcamLocation = gl.getUniformLocation(tprogram,"camera");
+    ttransLocation = gl.getUniformLocation(tprogram,"transform");
+    tfovLocation = gl.getUniformLocation(tprogram,"fov");
+
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
     gl.bindAttribLocation(tprogram,0,"position");
     gl.enableVertexAttribArray(0);
@@ -211,6 +218,9 @@ window.addEventListener("load",_=>{
     gl.uniform2f(resLocation,scrW,scrH);
     gl.uniform3f(circleLocation,x,y,z);
     gl.uniform3f(rotAxisLocation,rx,ry,rz);
+    gl.uniform3f(camLocation,camera[0],camera[1],camera[2]);
+    gl.uniformMatrix3fv(transLocation,false,transform);
+    gl.uniform1f(fovLocation,fov);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
@@ -230,6 +240,9 @@ window.addEventListener("load",_=>{
   drawTriangles = _=>{
     if(!tprogram)return;
     gl.useProgram(tprogram);
+    gl.uniform3f(tcamLocation,camera[0],camera[1],camera[2]);
+    gl.uniformMatrix3fv(ttransLocation,false,transformI);
+    gl.uniform1f(tfovLocation,fov);
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
     gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
     gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);

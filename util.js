@@ -5,6 +5,9 @@ window.addEventListener("load",_=>{
   scrW = cvs.width;
   scrH = cvs.height;
 
+  const angleCount = 24;
+  const proceedCount = 4;
+
   const gl = cvs.getContext("webgl");
   const extFloat = gl.getExtension('OES_texture_float');
   if(extFloat == null){
@@ -34,7 +37,7 @@ window.addEventListener("load",_=>{
   gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.STATIC_DRAW);
 
-  const tverts = new Float32Array(24*(2*6-1)*3*3);
+  const tverts = new Float32Array(angleCount*(2*proceedCount-1)*3*3);
   const tvbo = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
   gl.bufferData(gl.ARRAY_BUFFER,tverts,gl.DYNAMIC_DRAW);
@@ -317,6 +320,6 @@ window.addEventListener("load",_=>{
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
     gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
     gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
-    gl.drawArrays(gl.TRIANGLES,0,24*(2*6-1)*3);
+    gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
   };
 });

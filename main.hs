@@ -34,11 +34,12 @@ step v@(coord@(World x y z), veloc, rotAx@(World rx ry rz)) = do
   pss' <- for [0..u-1] $ \d -> do
     let
       angle = d/u*2*pi
+      s = 1 / cos (fmod angle (pi/2) - pi/4)
       dir = ax * scale (cos angle) + ay * scale (sin angle)
     S.evalStateT ?? (coord,dir) $ do
-      for [0..5] $ \i -> do
+      for [1..4] $ \i -> do
         v <- use _2
-        _1 += v * scale (0.055 * (1 + 1 / (i+1)))
+        _1 += v * scale (0.055 * (1 + 1 / i) * s)
         _1 %= fitP
         p <- use _1
         _2 %= fitR p

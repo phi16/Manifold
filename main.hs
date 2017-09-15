@@ -4,11 +4,9 @@ module Main where
 
 import Prelude hiding (length)
 import Lib.Util
-import Lib.World
 import Lib.Screen
 import Lib.Render
-import Lib.AD
-import Data.Traversable
+import Lib.Physics
 import qualified "mtl" Control.Monad.State as S
 
 main :: IO ()
@@ -30,14 +28,14 @@ step v@(coord@(World x y z), veloc, rotAx@(World rx ry rz)) = do
   let
     ax = rotAx
     ay = cross rotAx (normal coord)
-    u = 24
+    u = angleCount
   pss' <- for [0..u-1] $ \d -> do
     let
       angle = d/u*2*pi
       s = 1 / cos (fmod angle (pi/2) - pi/4)
       dir = ax * scale (cos angle) + ay * scale (sin angle)
     S.evalStateT ?? (coord,dir) $ do
-      for [1..4] $ \i -> do
+      for [1..proceedCount] $ \i -> do
         v <- use _2
         _1 += v * scale (0.055 * (1 + 1 / i) * s)
         _1 %= fitP
@@ -62,26 +60,3 @@ step v@(coord@(World x y z), veloc, rotAx@(World rx ry rz)) = do
     veloc' = fitV coord' veloc
     rotAx' = fitR coord' rotAx
   return (coord', veloc', rotAx')
-
-fitP :: World R -> World R
-fitP p = let
-    f = field p
-    g = gradient p
-    n = normalize g
-    d = f / length g
-  in p - n * scale d
-
-fitV :: World R -> World R -> World R
-fitV p v = let
-    g = normal p
-    l = length v
-    a = - dot v g
-    d = v + g * scale a
-  in if l == 0 then 0 else scale l * normalize d
-
-fitR :: World R -> World R -> World R
-fitR p r = let
-    g = normal p
-    a = - dot r g
-    d = r + g * scale a
-  in normalize d

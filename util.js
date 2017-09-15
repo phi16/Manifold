@@ -1,12 +1,11 @@
 let scrW = 0, scrH = 0;
 let refresh = _=>_, compile = _=>_, draw = _=>_, triangle = _=>_;
+const angleCount = 24;
+const proceedCount = 4;
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
   scrW = cvs.width;
   scrH = cvs.height;
-
-  const angleCount = 24;
-  const proceedCount = 4;
 
   const gl = cvs.getContext("webgl");
   const extFloat = gl.getExtension('OES_texture_float');

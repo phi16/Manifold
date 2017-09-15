@@ -3,6 +3,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Lib.Util (
   module Control.Applicative,
@@ -10,7 +11,8 @@ module Lib.Util (
   module Lens.Micro,
   module Lens.Micro.GHC,
   module Lens.Micro.Mtl,
-  R,
+  angleCount, proceedCount,
+  R, S1,
   (+~), (*~), fmod, (??),
   io,
   V1(..), V2(..), V3(..), V4(..),
@@ -25,8 +27,15 @@ import Control.Monad.IO.Class
 import Lens.Micro
 import Lens.Micro.GHC
 import Lens.Micro.Mtl
+import Haste.Foreign
+
+angleCount :: Int
+angleCount = constant "angleCount"
+proceedCount :: Int
+proceedCount = constant "proceedCount"
 
 type R = Double
+type S1 = R
 
 (+~) :: Num a => ASetter s s a a -> a -> s -> s
 l +~ x = l %~ (+x)
@@ -60,7 +69,6 @@ class Space f where
 class (Functor f, Space f) => Arith f where
   scale :: Field a => a -> f a
   dot :: Field a => f a -> f a -> a
-  cross :: Field a => f a -> f a -> f a
   norm :: Field a => f a -> a
   norm x = dot x x
   length :: Field a => f a -> a

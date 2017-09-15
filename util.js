@@ -1,7 +1,13 @@
-let scrW = 0, scrH = 0;
-let refresh = _=>_, compile = _=>_, draw = _=>_, triangle = _=>_;
 const angleCount = 24;
 const proceedCount = 4;
+
+let scrW = 0, scrH = 0;
+let refresh = _=>_;
+let compile = _=>_;
+let draw = _=>_;
+let vertex = _=>_;
+let drawTriangles = _=>_;
+
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
   scrW = cvs.width;
@@ -36,7 +42,7 @@ window.addEventListener("load",_=>{
   gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.STATIC_DRAW);
 
-  const tverts = new Float32Array(angleCount*(2*proceedCount-1)*3*3);
+  const tverts = new Float32Array(angleCount*(2*proceedCount-1)*3*6);
   const tvbo = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
   gl.bufferData(gl.ARRAY_BUFFER,tverts,gl.DYNAMIC_DRAW);
@@ -110,16 +116,6 @@ window.addEventListener("load",_=>{
       pos = cur+dir*d;
       nrm = gradient(pos);
 
-      // sphere
-      //float theta = coord.x/resolution.x*pi;
-      //float phi = coord.y/resolution.y*pi/2.;
-      //pos = vec3(cos(phi)*cos(theta),sin(phi),cos(phi)*sin(theta));
-
-      // torus
-      //float theta = coord.x/resolution.x*pi;
-      //float phi = coord.y/resolution.y*pi;
-      //pos = vec3((0.8+0.5*cos(phi))*cos(theta),0.5*sin(phi),(0.8+0.5*cos(phi))*sin(theta));
-
       // Coloring
       vec3 color;
       if(maxIter == -1){
@@ -128,40 +124,6 @@ window.addEventListener("load",_=>{
         color = pos*0.2+0.8;
       }
       gl_FragColor = vec4(color,d);
-    }
-  `;
-
-  const tvsSource = `
-    precision mediump float;
-    const float pi = 3.1415926535;
-    attribute vec3 position;
-    varying vec3 coord;
-    varying vec3 screen;
-    uniform vec3 camera;
-    uniform mat3 transform;
-    uniform float fov;
-    void main(void){
-      coord = position;
-      vec3 p = transform * (position - camera);
-      p.x *= 3./4.;
-      p.xy /= tan(fov*pi/180.);
-      screen = p;
-      gl_Position = vec4(p,p.z);
-    }
-  `;
-  const tfsSource = `
-    precision mediump float;
-    const float pi = 3.1415926535;
-    varying vec3 coord;
-    varying vec3 screen;
-    uniform vec3 camera;
-    uniform sampler2D worldTex;
-    void main(void){
-      vec2 texCoord = screen.xy / screen.z * 0.5 + 0.5;
-      float depth = texture2D(worldTex,texCoord).w;
-      float surfaceDepth = length(coord - camera);
-      if(depth < surfaceDepth - 0.2)discard;
-      gl_FragColor = vec4(coord*0.5+0.5,1);
     }
   `;
 
@@ -184,11 +146,53 @@ window.addEventListener("load",_=>{
     }
   `;
 
+  const tvsSource = `
+    precision mediump float;
+    const float pi = 3.1415926535;
+    attribute vec3 position;
+    attribute float axisRatio;
+    attribute float axisLen;
+    attribute float anglePos;
+    varying vec3 coord;
+    varying vec3 screen;
+    varying vec2 local;
+    uniform vec3 camera;
+    uniform mat3 transform;
+    uniform float fov;
+    void main(void){
+      coord = position;
+      vec3 p = transform * (position - camera);
+      p.x *= 3./4.;
+      p.xy /= tan(fov*pi/180.);
+      screen = p;
+      local = axisRatio * vec2(cos(anglePos),sin(anglePos));
+      gl_Position = vec4(p,p.z);
+    }
+  `;
+  const tfsSource = `
+    precision mediump float;
+    const float pi = 3.1415926535;
+    varying vec3 coord;
+    varying vec3 screen;
+    varying vec2 local;
+    uniform vec3 camera;
+    uniform sampler2D worldTex;
+    void main(void){
+      vec2 texCoord = screen.xy / screen.z * 0.5 + 0.5;
+      float depth = texture2D(worldTex,texCoord).w;
+      float surfaceDepth = length(coord - camera);
+      if(depth < surfaceDepth - 0.2)discard;
+      vec3 color = coord * 0.5 + 0.5;
+      if(length(local) > 0.9) color *= 0.5;
+      gl_FragColor = vec4(color,1);
+    }
+  `;
+
   let program, tprogram, bgprogram;
   let resLocation;
   let camLocation, transLocation, fovLocation;
   let tcamLocation, ttransLocation, tfovLocation;
-  let worldTexLocation;
+  let bgworldTexLocation, tworldTexLocation;
 
   let camera = [0,4,-4];
   let adir = 0.8;
@@ -231,7 +235,6 @@ window.addEventListener("load",_=>{
     gl.useProgram(program);
 
     resLocation = gl.getUniformLocation(program,"resolution");
-
     camLocation = gl.getUniformLocation(program,"camera");
     transLocation = gl.getUniformLocation(program,"transform");
     fovLocation = gl.getUniformLocation(program,"fov");
@@ -250,8 +253,8 @@ window.addEventListener("load",_=>{
 
     gl.bindTexture(gl.TEXTURE_2D,worldTexture);
     gl.activeTexture(gl.TEXTURE0);
-    worldTexLocation = gl.getUniformLocation(bgprogram,"worldTex");
-    gl.uniform1i(worldTexLocation,0);
+    bgworldTexLocation = gl.getUniformLocation(bgprogram,"worldTex");
+    gl.uniform1i(bgworldTexLocation,0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.bindAttribLocation(bgprogram,0,"position");
@@ -268,10 +271,18 @@ window.addEventListener("load",_=>{
     tcamLocation = gl.getUniformLocation(tprogram,"camera");
     ttransLocation = gl.getUniformLocation(tprogram,"transform");
     tfovLocation = gl.getUniformLocation(tprogram,"fov");
+    tworldTexLocation = gl.getUniformLocation(tprogram,"worldTex");
+    gl.uniform1i(tworldTexLocation,0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
     gl.bindAttribLocation(tprogram,0,"position");
+    gl.bindAttribLocation(tprogram,1,"axisRatio");
+    gl.bindAttribLocation(tprogram,2,"axisLen");
+    gl.bindAttribLocation(tprogram,3,"anglePos");
     gl.enableVertexAttribArray(0);
+    gl.enableVertexAttribArray(1);
+    gl.enableVertexAttribArray(2);
+    gl.enableVertexAttribArray(3);
   };
   draw = _=>{
     if(!program)return;
@@ -282,27 +293,23 @@ window.addEventListener("load",_=>{
     gl.uniformMatrix3fv(transLocation,false,transform);
     gl.uniform1f(fovLocation,fov);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
-    gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 
     gl.useProgram(bgprogram);
-    // texture set
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
-    gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   };
-  triangle = (x1,y1,z1,x2,y2,z2,x3,y3,z3)=>{
-    tverts[tIndex+0] = x1;
-    tverts[tIndex+1] = y1;
-    tverts[tIndex+2] = z1;
-    tverts[tIndex+3] = x2;
-    tverts[tIndex+4] = y2;
-    tverts[tIndex+5] = z2;
-    tverts[tIndex+6] = x3;
-    tverts[tIndex+7] = y3;
-    tverts[tIndex+8] = z3;
-    tIndex += 9;
+  vertex = (x,y,z,a,w,r)=>{
+    tverts[tIndex+0] = x;
+    tverts[tIndex+1] = y;
+    tverts[tIndex+2] = z;
+    tverts[tIndex+3] = a;
+    tverts[tIndex+4] = w;
+    tverts[tIndex+5] = r;
+    tIndex += 6;
   };
   drawTriangles = _=>{
     if(!tprogram)return;
@@ -311,7 +318,10 @@ window.addEventListener("load",_=>{
     gl.uniformMatrix3fv(ttransLocation,false,transformI);
     gl.uniform1f(tfovLocation,fov);
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
-    gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+    gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);
+    gl.vertexAttribPointer(1,1,gl.FLOAT,false,24,12);
+    gl.vertexAttribPointer(2,1,gl.FLOAT,false,24,16);
+    gl.vertexAttribPointer(3,1,gl.FLOAT,false,24,20);
     gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
     gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
     tIndex = 0;

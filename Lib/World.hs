@@ -27,7 +27,9 @@ instance Num a => Num (World a) where
   fromInteger p = pure 0
 
 longAs :: (Eq a, Field a) => World a -> a -> World a
-v`longAs`l = if l == 0 then 0 else normalize v * scale l
+v`longAs`l
+  | length v == 0 = 0
+  | otherwise = normalize v * scale l
 
 instance Space World where
   basis = World (World 1 0 0) (World 0 1 0) (World 0 0 1)

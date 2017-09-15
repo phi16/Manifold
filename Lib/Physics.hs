@@ -19,10 +19,10 @@ dt = 0.05
 
 nextFrame :: S.StateT PhysWorld IO ()
 nextFrame = do
-  traverse %= \o -> o & veloc +~ o^.gravity * scale dt
+  traverse %= applyGravity dt
   cs <- generateConstraints
   solveConstraints cs
-  traverse %= \o -> o & coord +~ o^.veloc * scale dt & fitO
+  traverse %= applyVelocity dt
   return ()
 
 generateConstraints :: S.StateT PhysWorld IO [Constraint]

@@ -26,11 +26,6 @@ instance Num a => Num (World a) where
   signum = fmap signum
   fromInteger p = pure 0
 
-longAs :: (Eq a, Field a) => World a -> a -> World a
-v`longAs`l
-  | length v == 0 = 0
-  | otherwise = normalize v * scale l
-
 instance Space World where
   basis = World (World 1 0 0) (World 0 1 0) (World 0 0 1)
 
@@ -78,6 +73,7 @@ fitV p v = let
     l = length v
     a = - dot v g
     d = v + g * scale a
+    longAs v l = if length v == 0 then 0 else normalize v * scale l
   in d`longAs`l
 
 fitR :: Field a => World a -> World a -> World a

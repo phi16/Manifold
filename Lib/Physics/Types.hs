@@ -65,7 +65,7 @@ data Object = Object {
   _coord :: Pos R,
   _veloc :: Pos R,
   _rotAxis :: World R,
-  _gravity :: Pos R,
+  _gravity :: World R,
   _massInv :: Pos R
 } deriving Show
 
@@ -77,7 +77,7 @@ veloc :: Lens' Object (Pos R)
 veloc = lens _veloc $ \c v -> c {_veloc = v}
 rotAxis :: Lens' Object (World R)
 rotAxis = lens _rotAxis $ \c v -> c {_rotAxis = v}
-gravity :: Lens' Object (Pos R)
+gravity :: Lens' Object (World R)
 gravity = lens _gravity $ \c v -> c {_gravity = v}
 massInv :: Lens' Object (Pos R)
 massInv = lens _massInv $ \c v -> c {_massInv = v}
@@ -108,7 +108,7 @@ make (Shape s) rho c v ra = let
     mass = integrate 1 * rho  -- 1 * J = r^1
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
-    g = Pos (World 0 1 0) (Rotate 0)
+    g = World 0 1 0
   in Object (Shape s) c v ra g mi
 
 fitO :: Object -> Object
@@ -120,6 +120,16 @@ fitO o = let
     & coord.place .~ p
     & veloc.place .~ v
     & rotAxis .~ ra
+
+applyGravity :: R -> Object -> Object
+applyGravity dt o = o & veloc.place +~ g * scale dt where
+  perpTo v p = let
+      n = normal p
+    in v - n * scale (dot n v)
+  g = (o^.gravity) `perpTo` (o^.coord.place)
+
+applyVelocity :: R -> Object -> Object
+applyVelocity dt o = o & coord +~ o^.veloc * scale dt & fitO
 
 data Local a = Local a a
   deriving (Show, Functor, Foldable)

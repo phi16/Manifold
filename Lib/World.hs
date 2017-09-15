@@ -59,26 +59,23 @@ distance p = field p / norm (gradient p)
 normal :: Field a => World a -> World a
 normal p = normalize $ gradient p
 
-fitP :: Field a => World a -> World a
+perpTo :: Field a => World a -> World a -> World a
+perpTo v n = v - n * scale (dot n v)
+
+fitP :: Field a => World a -> (World a, World a)
 fitP p = let
     f = field p
     g = gradient p
     n = normalize g
     d = f / length g
-  in p - n * scale d
+  in (p - n * scale d, n)
 
 fitV :: (Eq a, Field a) => World a -> World a -> World a
-fitV p v = let
-    g = normal p
+fitV n v = let
     l = length v
-    a = - dot v g
-    d = v + g * scale a
+    d = v`perpTo`n
     longAs v l = if length v == 0 then 0 else normalize v * scale l
   in d`longAs`l
 
 fitR :: Field a => World a -> World a -> World a
-fitR p r = let
-    g = normal p
-    a = - dot r g
-    d = r + g * scale a
-  in normalize d
+fitR n r = normalize $ r`perpTo`n

@@ -4,8 +4,9 @@ module Main where
 
 import Lib.Util hiding (length)
 import Lib.Screen
-import Lib.Render
+import Lib.Shader
 import Lib.World
+import Lib.Object
 import Lib.Physics
 import Data.Traversable
 import qualified "mtl" Control.Monad.State as S
@@ -27,8 +28,8 @@ initial = do
     p2 = World 1.3 0 0
     v1 = World (-0.2) 0 1
     v2 = World 0 (-0.1) 0.3
-    o1 = make (circle 0.04) 1.2 (Pos p1 0) (Pos v1 0) ra
-    o2 = make (square 0.04) 1.2 (Pos p2 0) (Pos v2 3) ra
+    o1 = make (circle 0.2) 1.2 (Pos p1 0) (Pos v1 0) ra
+    o2 = make (square 0.2) 1.2 (Pos p2 0) (Pos v2 0) ra
     ls = [o1,o2]
   return $ listArray (0,length ls-1) ls
 

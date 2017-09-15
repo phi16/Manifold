@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveFoldable #-}
 
-module Lib.Render (fieldStr, gradStr) where
+module Lib.Shader (fieldStr, gradStr) where
 
 import Lib.Util
 import Lib.World

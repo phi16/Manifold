@@ -62,8 +62,6 @@ window.addEventListener("load",_=>{
     uniform mat3 transform;
     uniform float fov;
 
-    uniform vec3 circle;
-    uniform vec3 rotAxis;
     float field(vec3 p){
       float x = p.x;
       float y = p.y;
@@ -187,7 +185,7 @@ window.addEventListener("load",_=>{
   `;
 
   let program, tprogram, bgprogram;
-  let resLocation, circleLocation, rotAxisLocation;
+  let resLocation;
   let camLocation, transLocation, fovLocation;
   let tcamLocation, ttransLocation, tfovLocation;
   let worldTexLocation;
@@ -233,8 +231,6 @@ window.addEventListener("load",_=>{
     gl.useProgram(program);
 
     resLocation = gl.getUniformLocation(program,"resolution");
-    circleLocation = gl.getUniformLocation(program,"circle");
-    rotAxisLocation = gl.getUniformLocation(program,"rotAxis");
 
     camLocation = gl.getUniformLocation(program,"camera");
     transLocation = gl.getUniformLocation(program,"transform");
@@ -277,13 +273,11 @@ window.addEventListener("load",_=>{
     gl.bindAttribLocation(tprogram,0,"position");
     gl.enableVertexAttribArray(0);
   };
-  draw = (x,y,z,rx,ry,rz)=>{
+  draw = _=>{
     if(!program)return;
     gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
     gl.useProgram(program);
     gl.uniform2f(resLocation,scrW,scrH);
-    gl.uniform3f(circleLocation,x,y,z);
-    gl.uniform3f(rotAxisLocation,rx,ry,rz);
     gl.uniform3f(camLocation,camera[0],camera[1],camera[2]);
     gl.uniformMatrix3fv(transLocation,false,transform);
     gl.uniform1f(fovLocation,fov);
@@ -320,5 +314,6 @@ window.addEventListener("load",_=>{
     gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
     gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
     gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
+    tIndex = 0;
   };
 });

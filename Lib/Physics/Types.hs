@@ -96,8 +96,8 @@ square r = Shape $ \a -> r / cos (fmod a (pi/2) - pi/4)
 
 type Density = R
 
-make :: Shape -> Density -> Object
-make (Shape s) rho = let
+make :: Shape -> Density -> Pos R -> Pos R -> World R -> Object
+make (Shape s) rho c v ra = let
     aN = fromIntegral angleCount
     r i = s (2*pi*i/aN)
     integrate :: Int -> R
@@ -107,13 +107,19 @@ make (Shape s) rho = let
         rr x = sum [ r1^i * r2^(x-1-i) | i <- [0..x-1] ]
     mass = integrate 1 * rho  -- 1 * J = r^1
     inertia = integrate 3 * rho -- r^2 * J = r^3
-
-    c = Pos (World 0 0 0) (Rotate 0)
-    v = Pos (World 0 0 0) (Rotate 0)
-    ra = World 1 0 0 -- TODO : normalize
-    g = Pos (World 0 1 0) (Rotate 0)
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
+    g = Pos (World 0 1 0) (Rotate 0)
   in Object (Shape s) c v ra g mi
+
+fitO :: Object -> Object
+fitO o = let
+    p = fitP $ o^.coord.place
+    v = fitV p $ o^.veloc.place
+    ra = fitR p $ o^.rotAxis
+  in o
+    & coord.place .~ p
+    & veloc.place .~ v
+    & rotAxis .~ ra
 
 data Local a = Local a a
   deriving (Show, Functor, Foldable)
@@ -141,3 +147,5 @@ instance Space Local where
 instance Arith Local where
   scale = pure
   dot (Local x1 y1) (Local x2 y2) = x1*x2 + y1*y2
+
+type Constraint = () -- TODO

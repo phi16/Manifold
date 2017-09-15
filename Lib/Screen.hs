@@ -16,7 +16,7 @@ scrH :: R
 scrH = constant "scrH"
 refresh :: IO ()
 refresh = ffi "refresh"
-draw :: R -> R -> R -> R -> R -> R -> IO ()
+draw :: IO ()
 draw = ffi "draw"
 triangle :: R -> R -> R -> R -> R -> R -> R -> R -> R -> IO ()
 triangle = ffi "triangle"

@@ -2,12 +2,14 @@
 
 module Main where
 
-import Prelude hiding (length)
-import Lib.Util
+import Lib.Util hiding (length)
 import Lib.Screen
 import Lib.Render
+import Lib.World
 import Lib.Physics
+import Data.Traversable
 import qualified "mtl" Control.Monad.State as S
+import Data.Array
 
 main :: IO ()
 main = do
@@ -15,48 +17,24 @@ main = do
   i <- initial
   run i step
 
-type State = (World R, World R, World R)
+type State = PhysWorld
 
 initial :: IO State
--- initial = return (World (-1) 0 0, normalize $ World 0 (-1) 1, World 0 0 1)
-initial = return (World (-1.3) 0 0, normalize $ World 0 1 0.2, World 0 0 1)
+initial = do
+  let
+    ra = World 0 0 1
+    p1 = World (-1.3) 0 0
+    p2 = World 1.3 0 0
+    v1 = World 0 0 0.2
+    v2 = World 0 (-0.1) 0.3
+    o1 = make (circle 0.04) 1.2 (Pos p1 0) (Pos v1 0) ra
+    o2 = make (square 0.04) 1.2 (Pos p2 0) (Pos v2 3) ra
+    ls = [o1,o2]
+  return $ listArray (0,length ls-1) ls
 
 step :: State -> IO State
-step v@(coord@(World x y z), veloc, rotAx@(World rx ry rz)) = do
+step w = do
   refresh
-  draw x y z rx ry rz
-  let
-    ax = rotAx
-    ay = cross rotAx (normal coord)
-    u = angleCount
-  pss' <- for [0..u-1] $ \d -> do
-    let
-      angle = d/u*2*pi
-      s = 1 / cos (fmod angle (pi/2) - pi/4)
-      dir = ax * scale (cos angle) + ay * scale (sin angle)
-    S.evalStateT ?? (coord,dir) $ do
-      for [1..proceedCount] $ \i -> do
-        v <- use _2
-        _1 += v * scale (0.055 * (1 + 1 / i) * s)
-        _1 %= fitP
-        p <- use _1
-        _2 %= fitR p
-        use _1
-  let
-    comp :: [World R] -> [World R] -> [(World R, World R, World R)]
-    comp xs ys = let
-        make :: (World R, World R) -> (World R, World R) -> [(World R, World R, World R)]
-        make (a,b) (c,d) = [(a,b,c),(b,c,d)]
-        rects = zipWith make (zip xs $ tail xs) (zip ys $ tail ys)
-      in (coord,head xs,head ys) : concat rects
-    pss = concat $ zipWith comp pss' (tail $ pss' ++ [head pss'])
-  for pss $ \(World x1 y1 z1, World x2 y2 z2, World x3 y3 z3) ->
-    triangle x1 y1 z1 x2 y2 z2 x3 y3 z3
-  drawTriangles
-  let
-    dt = 0.02
-    pos = coord + veloc * scale dt
-    coord' = fitP pos
-    veloc' = fitV coord' veloc
-    rotAx' = fitR coord' rotAx
-  return (coord', veloc', rotAx')
+  draw
+  for w drawObject
+  S.execStateT nextFrame w

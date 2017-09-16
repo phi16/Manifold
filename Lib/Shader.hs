@@ -51,6 +51,19 @@ instance Floating (Var String) where
   acosh x = C ["acosh(",x,")"]
   atanh x = C ["atanh(",x,")"]
 
+instance Eq (Var String) where
+  (==) = error "(==) is not defined"
+  (/=) = error "(/=) is not defined"
+
+instance Ord (Var String) where
+  (<) = error "(<) is not defined"
+  (>) = error "(>) is not defined"
+  (<=) = error "(<=) is not defined"
+  (>=) = error "(>=) is not defined"
+  compare = error "compare is not defined"
+  min x y = C ["min(",x,",",y,")"]
+  max x y = C ["max(",x,",",y,")"]
+
 argument :: World (Var String)
 argument = fmap S $ World "x" "y" "z"
 

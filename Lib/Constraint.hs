@@ -7,6 +7,7 @@ module Lib.Constraint where
 
 import Lib.Util
 import Lib.Object
+import Lib.World
 
 -- Local
 
@@ -36,6 +37,16 @@ instance Space Local where
 instance Arith Local where
   scale = pure
   dot (Local x1 y1) (Local x2 y2) = x1*x2 + y1*y2
+
+-- ContactPoint
+
+data ContactPoint = ContactPoint {
+  _local1 :: Vertex R,
+  _local2 :: Vertex R,
+  _normal1 :: World R,
+  _normal2 :: World R,
+  _depth :: R
+} deriving Show
 
 -- Constraint
 

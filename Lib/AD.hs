@@ -42,6 +42,19 @@ instance Linear f a => Floating (Expr f a) where
   acosh (Expr x x') = Expr (acosh x) (fmap (/(sqrt (x^2-1))) x')
   atanh (Expr x x') = Expr (atanh x) (fmap (/(1-x^2)) x')
 
+instance Linear f a => Eq (Expr f a) where
+  (==) = error "(==) is not defined"
+  (/=) = error "(/=) is not defined"
+
+instance Linear f a => Ord (Expr f a) where
+  (<) = error "(<) is not defined"
+  (>) = error "(>) is not defined"
+  (<=) = error "(<=) is not defined"
+  (>=) = error "(>=) is not defined"
+  compare = error "compare is not defined"
+  min (Expr x x') (Expr y y') = Expr (min x y) (liftA2 (\x' y' -> mix y' x' $ signum (y-x) * 0.5 + 0.5) x' y')
+  max (Expr x x') (Expr y y') = Expr (max x y) (liftA2 (\x' y' -> mix x' y' $ signum (y-x) * 0.5 + 0.5) x' y')
+
 grad :: Linear f a => (f (Expr f a) -> Expr f a) -> f a -> f a
 grad f p = let
     Expr _ diff = f (liftA2 Expr p basis)

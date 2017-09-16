@@ -13,7 +13,7 @@ module Lib.Util (
   module Lens.Micro.Mtl,
   angleCount, proceedCount,
   R, S1,
-  (+~), (*~), fmod, (??),
+  (+~), (*~), fmod, (??), mix,
   io,
   V1(..), V2(..), V3(..), V4(..),
   Space(..), Arith(..), Linear, Euclidean,
@@ -48,6 +48,9 @@ infix 4 *~
 fmod :: RealFrac a => a -> a -> a
 fmod e m = e + (-1) * fromIntegral (floor (e/m)) * m
 
+mix :: Num a => a -> a -> a -> a
+mix a b x = a + (b - a) * x
+
 io :: MonadIO m => IO a -> m a
 io = liftIO
 
@@ -76,6 +79,6 @@ class (Functor f, Space f) => Arith f where
   normalize :: Field a => f a -> f a
   normalize x = let l = length x in fmap (/l) x
 
-type Field a = Floating a
+type Field a = (Floating a, Ord a)
 type Linear f a = (Applicative f, Space f, Field a)
 type Euclidean f a = (Linear f a, Arith f)

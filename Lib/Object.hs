@@ -124,7 +124,8 @@ data Object = Object {
   _rotAxis :: World R,
   -- cache
   _surface :: World R,
-  _polygon :: [Polygon R]
+  _polygon :: [Polygon R],
+  _outline :: [Vertex R]
 } deriving Show
 
 shape :: Lens' Object Shape
@@ -145,6 +146,8 @@ surface :: Lens' Object (World R)
 surface = lens _surface $ \c v -> c {_surface = v}
 polygon :: Lens' Object [Polygon R]
 polygon = lens _polygon $ \c v -> c {_polygon = v}
+outline :: Lens' Object [Vertex R]
+outline = lens _outline $ \c v -> c {_outline = v}
 
 static :: SimpleGetter Object Object
 static = to $ (gravity .~ 0) . (massInv .~ 0)
@@ -173,9 +176,9 @@ make (Shape s) rho c v ra = let
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
     g = World 0 0.5 (-1)
-  in fitO $ Object (Shape s) g mi c v ra undefined undefined
+  in fitO $ Object (Shape s) g mi c v ra undefined undefined undefined
 
-generatePolygon :: Object -> [Polygon R]
+generatePolygon :: Object -> ([Polygon R], [Vertex R])
 generatePolygon o = S.evalState ?? o $ do
   Pos c (Rotate r) <- use coord
   Shape sf <- use shape
@@ -191,7 +194,7 @@ generatePolygon o = S.evalState ?? o $ do
         s = sf a
         a' = a + r
         dir = ax * scale (cos a') + ay * scale (sin a')
-        c' = Vertex c (Ratio 0 s) (Rotate a')
+        c' = Vertex c (Ratio 0 s) (Rotate a)
       in (c',) $ S.evalState ?? (c,dir) $ do
         for [1..pC] $ \i -> do
           v <- use _2
@@ -199,7 +202,7 @@ generatePolygon o = S.evalState ?? o $ do
           (p,n) <- use $ _1.to fitP
           _1 .= p
           _2 %= fitR n
-          return $ Vertex p (Ratio (i/pC) s) (Rotate a')
+          return $ Vertex p (Ratio (i/pC) s) (Rotate a)
   let
     comp :: (Vertex R, [Vertex R]) -> (Vertex R, [Vertex R]) -> [Polygon R]
     comp (cv,xs) (_,ys) = let
@@ -208,7 +211,8 @@ generatePolygon o = S.evalState ?? o $ do
         rects = zipWith make (zip xs $ tail xs) (zip ys $ tail ys)
       in Polygon cv (head xs) (head ys) : concat rects
     ps = concat $ zipWith comp vss (tail $ vss ++ [head vss])
-  return ps
+    ls = map (\(_,vs) -> last vs) vss
+  return (ps, ls)
 
 fitO :: Object -> Object
 fitO o = let
@@ -220,7 +224,11 @@ fitO o = let
     & veloc.place .~ v
     & rotAxis .~ ra
     & surface .~ n
-    & \o -> o & polygon .~ generatePolygon o
+    & \o -> let
+        (p,l) = generatePolygon o
+      in o
+        & polygon .~ p
+        & outline .~ l
 
 drawObject :: Object -> IO ()
 drawObject o = do

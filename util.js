@@ -80,6 +80,12 @@ window.addEventListener("load",_=>{
       float z = p.z;
       return ` + g + `;
     }
+    mat3 lookAt(vec3 look, vec3 up){
+      vec3 z = normalize(look);
+      vec3 x = normalize(cross(up,z));
+      vec3 y = cross(z,x);
+      return mat3(x,y,z);
+    }
     void main(void){
       vec2 uv = coord/resolution.y;
 
@@ -108,10 +114,16 @@ window.addEventListener("load",_=>{
         pos = cur+dir*d;
       }
       pos = cur+dir*d;
+      nrm = gradient(pos);
 
-      float err = length(field(pos))/length(gradient(pos));
-      if(abs(err) < 0.01) gl_FragColor = vec4(pos,d);
-      else gl_FragColor = vec4(-1);
+      // Coloring
+      vec3 color;
+      if(maxIter == -1){
+        color = vec3(1);
+      }else{
+        color = pos*0.2+0.8;
+      }
+      gl_FragColor = vec4(color,d);
     }
   `;
 
@@ -124,35 +136,13 @@ window.addEventListener("load",_=>{
       gl_Position = vec4(position,0.,1.);
     }
   `;
-  const bgfsSource = (f,g)=>`
+  const bgfsSource = `
     precision mediump float;
     varying vec2 coord;
     uniform sampler2D worldTex;
-
-    float field(vec3 p){
-      float x = p.x;
-      float y = p.y;
-      float z = p.z;
-      return ` + f + `;
-    }
-    vec3 gradient(vec3 p){
-      float x = p.x;
-      float y = p.y;
-      float z = p.z;
-      return ` + g + `;
-    }
     void main(void){
-      vec4 tex = texture2D(worldTex,coord);
-      vec3 pos = tex.xyz;
-      float depth = tex.w;
-      vec3 n = normalize(gradient(pos));
-      vec3 color;
-      if(depth == -1.){
-        color = vec3(1);
-      }else{
-        color = pos*0.2+0.8;
-      }
-      gl_FragColor = vec4(color,1);
+      gl_FragColor = texture2D(worldTex,coord);
+      gl_FragColor.w = 1.;
     }
   `;
 
@@ -165,7 +155,8 @@ window.addEventListener("load",_=>{
     attribute float anglePos;
     varying vec3 coord;
     varying vec3 screen;
-    varying vec2 local;
+    varying vec2 borderCoord;
+    varying vec2 localCoord;
     uniform vec3 camera;
     uniform mat3 transform;
     uniform float fov;
@@ -175,7 +166,8 @@ window.addEventListener("load",_=>{
       p.x *= 3./4.;
       p.xy /= tan(fov*pi/180.);
       screen = p;
-      local = axisRatio * vec2(cos(anglePos),sin(anglePos));
+      borderCoord = axisRatio * vec2(cos(anglePos),sin(anglePos));
+      localCoord = axisLen * borderCoord;
       gl_Position = vec4(p,p.z);
     }
   `;
@@ -184,7 +176,8 @@ window.addEventListener("load",_=>{
     const float pi = 3.1415926535;
     varying vec3 coord;
     varying vec3 screen;
-    varying vec2 local;
+    varying vec2 borderCoord;
+    varying vec2 localCoord;
     uniform vec3 camera;
     uniform sampler2D worldTex;
     void main(void){
@@ -193,8 +186,10 @@ window.addEventListener("load",_=>{
       float surfaceDepth = length(coord - camera);
       if(depth < surfaceDepth - 0.2)discard;
       vec3 color = coord * 0.5 + 0.5;
-      if(length(local) > 0.9) color *= 0.5;
-      gl_FragColor = vec4(color,1);
+      float factor = 1.;
+      if(length(borderCoord) > 0.9) factor = 0.5;
+      if(abs(localCoord.x) < 0.01 && localCoord.y < 0.01) factor = 0.5;
+      gl_FragColor = vec4(color*factor,1);
     }
   `;
 
@@ -255,7 +250,7 @@ window.addEventListener("load",_=>{
 
     // World rendering
     const bgvs = makeShader(gl.VERTEX_SHADER,bgvsSource);
-    const bgfs = makeShader(gl.FRAGMENT_SHADER,bgfsSource(field,grad));
+    const bgfs = makeShader(gl.FRAGMENT_SHADER,bgfsSource);
     if(!bgvs || !bgfs)return;
     bgprogram = makeProgram(bgvs,bgfs);
     if(!bgprogram)return;
@@ -285,6 +280,11 @@ window.addEventListener("load",_=>{
     gl.uniform1i(tworldTexLocation,0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
+    const lc3 = gl.getAttribLocation(tprogram,"anglePos");
+    if(lc3 != 3){
+      console.err("Deficient attributes");
+      return;
+    }
     gl.bindAttribLocation(tprogram,0,"position");
     gl.bindAttribLocation(tprogram,1,"axisRatio");
     gl.bindAttribLocation(tprogram,2,"axisLen");
@@ -304,12 +304,14 @@ window.addEventListener("load",_=>{
     gl.uniform1f(fovLocation,fov);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
+    gl.enableVertexAttribArray(0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 
     gl.useProgram(bgprogram);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
+    gl.enableVertexAttribArray(0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   };
   vertex = (x,y,z,a,w,r)=>{

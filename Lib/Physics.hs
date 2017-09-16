@@ -42,7 +42,7 @@ generateConstraints = do
     fmap concat $ for [i1..f] $ \i2 -> do
       Just o1 <- preuse $ ix i1
       Just o2 <- preuse $ ix i2
-      for (collide o1 o2) $ \(ContactPoint l1 l2 n1 n2 d) -> do
+      for (collide o1 o2) $ \(ContactPoint c1 c2 n1 n2) -> do
         return undefined
 
 solveConstraints :: [Constraint] -> S.StateT PhysWorld IO ()

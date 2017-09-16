@@ -45,10 +45,13 @@ instance V3 (World a) a where
 
 field :: Field a => World a -> a
 -- field p = length p - 1 -- Sphere
-field (World x y z) = let
+{- field (World x y z) = let
     qx = sqrt (x^2+z^2) - 0.8
     qy = y
-  in sqrt (qx^2 + qy^2) - 0.5
+  in sqrt (qx^2 + qy^2) - 0.5 -}
+field p = let
+    d = abs p - pure 0.6
+  in min 0 ((d^.x)`max`(d^.y)`max`(d^.z)) + length (World (max (d^.x) 0) (max (d^.y) 0) (max (d^.z) 0)) - 0.3
 
 gradient :: Field a => World a -> World a
 gradient = grad field

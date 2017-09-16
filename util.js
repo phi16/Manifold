@@ -80,12 +80,6 @@ window.addEventListener("load",_=>{
       float z = p.z;
       return ` + g + `;
     }
-    mat3 lookAt(vec3 look, vec3 up){
-      vec3 z = normalize(look);
-      vec3 x = normalize(cross(up,z));
-      vec3 y = cross(z,x);
-      return mat3(x,y,z);
-    }
     void main(void){
       vec2 uv = coord/resolution.y;
 
@@ -114,16 +108,10 @@ window.addEventListener("load",_=>{
         pos = cur+dir*d;
       }
       pos = cur+dir*d;
-      nrm = gradient(pos);
 
-      // Coloring
-      vec3 color;
-      if(maxIter == -1){
-        color = vec3(1);
-      }else{
-        color = pos*0.2+0.8;
-      }
-      gl_FragColor = vec4(color,d);
+      float err = length(field(pos))/length(gradient(pos));
+      if(abs(err) < 0.01) gl_FragColor = vec4(pos,d);
+      else gl_FragColor = vec4(-1);
     }
   `;
 
@@ -136,13 +124,35 @@ window.addEventListener("load",_=>{
       gl_Position = vec4(position,0.,1.);
     }
   `;
-  const bgfsSource = `
+  const bgfsSource = (f,g)=>`
     precision mediump float;
     varying vec2 coord;
     uniform sampler2D worldTex;
+
+    float field(vec3 p){
+      float x = p.x;
+      float y = p.y;
+      float z = p.z;
+      return ` + f + `;
+    }
+    vec3 gradient(vec3 p){
+      float x = p.x;
+      float y = p.y;
+      float z = p.z;
+      return ` + g + `;
+    }
     void main(void){
-      gl_FragColor = texture2D(worldTex,coord);
-      gl_FragColor.w = 1.;
+      vec4 tex = texture2D(worldTex,coord);
+      vec3 pos = tex.xyz;
+      float depth = tex.w;
+      vec3 n = normalize(gradient(pos));
+      vec3 color;
+      if(depth == -1.){
+        color = vec3(1);
+      }else{
+        color = pos*0.2+0.8;
+      }
+      gl_FragColor = vec4(color,1);
     }
   `;
 
@@ -245,7 +255,7 @@ window.addEventListener("load",_=>{
 
     // World rendering
     const bgvs = makeShader(gl.VERTEX_SHADER,bgvsSource);
-    const bgfs = makeShader(gl.FRAGMENT_SHADER,bgfsSource);
+    const bgfs = makeShader(gl.FRAGMENT_SHADER,bgfsSource(field,grad));
     if(!bgvs || !bgfs)return;
     bgprogram = makeProgram(bgvs,bgfs);
     if(!bgprogram)return;

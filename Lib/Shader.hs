@@ -4,7 +4,7 @@
 
 module Lib.Shader (fieldStr, gradStr) where
 
-import Lib.Util
+import Lib.Util hiding ((++), concat)
 import Lib.World
 import Haste
 import Haste.Prim

@@ -1,13 +1,14 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Lib.Physics (
   nextFrame,
   drawObject
 ) where
 
-import Prelude hiding (length)
+import Prelude hiding (length, concat, (++))
 import Lib.Util
 import Lib.World
 import Lib.Object
@@ -16,10 +17,11 @@ import Control.Applicative
 import Control.Monad
 import qualified Data.List as L
 import Data.Maybe
-import Data.Foldable hiding (length)
+import Data.Foldable hiding (length, concat)
 import Data.Traversable
 import qualified Data.Array as A
 import qualified "mtl" Control.Monad.State as S
+import GHC.Exts (IsList(..))
 import Debug.Trace
 
 dt :: R
@@ -40,9 +42,9 @@ nextFrame = do
   traverse %= applyVelocity
   return ()
 
-collide :: Object -> Object -> [ContactPoint]
+collide :: Object -> Object -> List (ContactPoint)
 collide o1 o2 = let
-    coordOf :: (Show a, Field a) => World a -> [Polygon a] -> Maybe (Local a)
+    coordOf :: (Show a, Field a) => World a -> List (Polygon a) -> Maybe (Local a)
     coordOf p ss = asum $ ss <&> \s -> do
       let
         wp1 = s^.x.worldPos
@@ -59,15 +61,15 @@ collide o1 o2 = let
         d1 = lineDist wp1 wp2 wp3
         d2 = lineDist wp2 wp3 wp1
         d3 = lineDist wp3 wp1 wp2
-      guard $ all (>=0) [d1,d2,d3]
+      guard $ all (>=0) $ [d1,d2,d3]++Nil
       -- guard $ d1+d2+d3 == 1
       let
         lo1 = toLocal $ s^.x
         lo2 = toLocal $ s^.y
         lo3 = toLocal $ s^.z
       return $ lo1*scale d1 + lo2*scale d2 + lo3*scale d3
-    intersect :: Object -> [Polygon R] -> [(World R, Local R)]
-    intersect frame target = catMaybes $ frame^..outline.each.to localize where
+    intersect :: Object -> List (Polygon R) -> List (World R, Local R)
+    intersect frame target = fromList $ catMaybes $ frame^..outline.folded.to localize where
       localize v = do
         l <- coordOf (v^.worldPos) target
         let l' = toLocal v
@@ -77,7 +79,7 @@ collide o1 o2 = let
     sect2 = intersect o2 $ o1^.polygon
   in L.length (show (sect1,sect2)) `seq` []
 
-generateConstraints :: S.StateT PhysWorld IO [Constraint]
+generateConstraints :: S.StateT PhysWorld IO (List Constraint)
 generateConstraints = do
   (s,f) <- use $ to A.bounds
   fmap concat $ for [s..f] $ \i1 -> do
@@ -87,5 +89,5 @@ generateConstraints = do
       for (collide o1 o2) $ \(ContactPoint c1 c2 n1 n2) -> do
         return ()
 
-solveConstraints :: [Constraint] -> S.StateT PhysWorld IO ()
+solveConstraints :: List Constraint -> S.StateT PhysWorld IO ()
 solveConstraints cs = return ()

@@ -4,8 +4,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Lib.Util (
+  module Data.Strict.List,
   module Control.Applicative,
   module Control.Monad,
   module Lens.Micro,
@@ -16,12 +18,14 @@ module Lib.Util (
   (+~), (*~), fmod, mix,
   (??),
   io,
+  zip, zipWith, head, tail, last, (++), concat,
   V1(..), V2(..), V3(..), V4(..),
   Space(..), Arith(..), Linear, Euclidean,
   Field(..)
 ) where
 
-import Prelude hiding (length)
+import Prelude hiding (length, zip, zipWith, head, tail, last, (++), concat)
+import Data.Strict.List
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
@@ -57,6 +61,35 @@ mix a b x = a + (b - a) * x
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
+
+zip :: List a -> List b -> List (a,b)
+zip (x:!xs) (y:!ys) = (x,y) :! zip xs ys
+zip _ _ = []
+
+zipWith :: (a -> b -> c) -> List a -> List b -> List c
+zipWith f (x:!xs) (y:!ys) = f x y :! zipWith f xs ys
+zipWith _ _ _ = []
+
+head :: List a -> a
+head (x:!xs) = x
+head _ = error "head : empty list"
+
+tail :: List a -> List a
+tail (x:!xs) = xs
+tail _ = error "tail : empty list"
+
+last :: List a -> a
+last (x:!Nil) = x
+last (x:!xs) = last xs
+last _ = error "last : empty list"
+
+(++) :: List a -> List a -> List a
+Nil ++ ys = ys
+(x:!xs) ++ ys = x :! xs ++ ys
+
+concat :: List (List a) -> List a
+concat Nil = Nil
+concat (xs:!xss) = xs ++ concat xss
 
 class V1 a b | a -> b where
   x :: Lens' a b

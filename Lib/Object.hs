@@ -5,15 +5,17 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Lib.Object where
 
+import Prelude hiding (zip, zipWith, head, tail, last, (++), concat)
 import Lib.Util
 import Lib.World
 import Lib.Screen
 import qualified Data.Array as A
 import Data.Monoid
-import Data.Foldable
+import Data.Foldable hiding (concat)
 import Data.Traversable
 import qualified "mtl" Control.Monad.State as S
 
@@ -31,7 +33,7 @@ angle = lens (\(Rotate a) -> a) $ \_ a -> Rotate a
 
 -- Pos
 
-data Pos a = Pos (World a) (Rotate a)
+data Pos a = Pos !(World a) !(Rotate a)
   deriving (Show, Functor)
 
 place :: Lens' (Pos a) (World a)
@@ -75,8 +77,8 @@ instance Show Shape where
 -- Ratio
 
 data Ratio a = Ratio {
-  _ratio :: a,
-  _whole :: a
+  _ratio :: !a,
+  _whole :: !a
 } deriving Show
 
 ratio :: Lens' (Ratio a) a
@@ -87,9 +89,9 @@ whole = lens _whole $ \c v -> c {_whole = v}
 -- Vertex
 
 data Vertex a = Vertex {
-  _worldPos :: World a,
-  _axisPos :: Ratio a,
-  _anglePos :: Rotate a
+  _worldPos :: !(World a),
+  _axisPos :: !(Ratio a),
+  _anglePos :: !(Rotate a)
 } deriving Show
 
 worldPos :: Lens' (Vertex a) (World a)
@@ -101,7 +103,7 @@ anglePos = lens _anglePos $ \c v -> c {_anglePos = v}
 
 -- Polygon
 
-data Polygon a = Polygon (Vertex a) (Vertex a) (Vertex a)
+data Polygon a = Polygon !(Vertex a) !(Vertex a) !(Vertex a)
   deriving Show
 
 instance V1 (Polygon a) (Vertex a) where
@@ -115,17 +117,17 @@ instance V3 (Polygon a) (Vertex a) where
 
 data Object = Object {
   -- property
-  _shape :: Shape,
-  _gravity :: World R,
-  _massInv :: Pos R,
+  _shape :: !Shape,
+  _gravity :: !(World R),
+  _massInv :: !(Pos R),
   -- state
-  _coord :: Pos R,
-  _veloc :: Pos R,
-  _rotAxis :: World R,
+  _coord :: !(Pos R),
+  _veloc :: !(Pos R),
+  _rotAxis :: !(World R),
   -- cache
-  _surface :: World R,
-  _polygon :: [Polygon R],
-  _outline :: [Vertex R]
+  _surface :: !(World R),
+  _polygon :: !(List (Polygon R)),
+  _outline :: !(List (Vertex R))
 } deriving Show
 
 shape :: Lens' Object Shape
@@ -144,9 +146,9 @@ rotAxis = lens _rotAxis $ \c v -> c {_rotAxis = v}
 
 surface :: Lens' Object (World R)
 surface = lens _surface $ \c v -> c {_surface = v}
-polygon :: Lens' Object [Polygon R]
+polygon :: Lens' Object (List (Polygon R))
 polygon = lens _polygon $ \c v -> c {_polygon = v}
-outline :: Lens' Object [Vertex R]
+outline :: Lens' Object (List (Vertex R))
 outline = lens _outline $ \c v -> c {_outline = v}
 
 static :: SimpleGetter Object Object
@@ -176,9 +178,12 @@ make (Shape s) rho c v ra = let
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
     g = World 0 0.5 (-1)
-  in fitO $ Object (Shape s) g mi c v ra undefined undefined undefined
+    surface' = 0
+    polygon' = []
+    outline' = []
+  in fitO $ Object (Shape s) g mi c v ra surface' polygon' outline'
 
-generatePolygon :: Object -> ([Polygon R], [Vertex R])
+generatePolygon :: Object -> (List (Polygon R), List (Vertex R))
 generatePolygon o = S.evalState ?? o $ do
   Pos c (Rotate r) <- use coord
   Shape sf <- use shape
@@ -189,7 +194,7 @@ generatePolygon o = S.evalState ?? o $ do
     ay = cross ax (o^.surface)
     aC = fromIntegral angleCount
     pC = fromIntegral proceedCount
-    vss = map ?? [0..aC-1] $ \ai -> let
+    vss = [0..aC-1] <&> \ai -> let
         a = ai/aC*2*pi
         s = sf a
         a' = a + r
@@ -204,14 +209,14 @@ generatePolygon o = S.evalState ?? o $ do
           _2 %= fitR n
           return $ Vertex p (Ratio (i/pC) s) (Rotate a)
   let
-    comp :: (Vertex R, [Vertex R]) -> (Vertex R, [Vertex R]) -> [Polygon R]
+    comp :: (Vertex R, List (Vertex R)) -> (Vertex R, List (Vertex R)) -> List (Polygon R)
     comp (cv,xs) (_,ys) = let
-        make :: (Vertex R, Vertex R) -> (Vertex R, Vertex R) -> [Polygon R]
+        make :: (Vertex R, Vertex R) -> (Vertex R, Vertex R) -> List (Polygon R)
         make (a,b) (c,d) = [Polygon a b c, Polygon b c d]
         rects = zipWith make (zip xs $ tail xs) (zip ys $ tail ys)
-      in Polygon cv (head xs) (head ys) : concat rects
+      in Polygon cv (head xs) (head ys) :! concat rects
     ps = concat $ zipWith comp vss (tail $ vss ++ [head vss])
-    ls = map (\(_,vs) -> last vs) vss
+    ls = last . snd <$> vss
   return (ps, ls)
 
 fitO :: Object -> Object
@@ -233,7 +238,7 @@ fitO o = let
 drawObject :: Object -> IO ()
 drawObject o = do
   for_ (o^.polygon) $ \p ->
-    for_ [p^.x,p^.y,p^.z] $ \v ->
+    for_ ([p^.x,p^.y,p^.z]++Nil) $ \v ->
       vertex
         (v^.worldPos.x)
         (v^.worldPos.y)

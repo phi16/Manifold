@@ -11,7 +11,7 @@ import Lib.Util
 import Lib.AD
 import Data.Monoid
 
-data World a = World a a a
+data World a = World !a !a !a
   deriving (Show, Functor, Foldable)
 
 instance Applicative World where

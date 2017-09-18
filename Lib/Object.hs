@@ -26,6 +26,9 @@ instance Applicative Rotate where
   pure = Rotate
   Rotate f <*> Rotate x = Rotate (f x)
 
+angle :: Lens' (Rotate a) a
+angle = lens (\(Rotate a) -> a) $ \_ a -> Rotate a
+
 -- Pos
 
 data Pos a = Pos (World a) (Rotate a)
@@ -35,9 +38,6 @@ place :: Lens' (Pos a) (World a)
 place = lens (\(Pos p _) -> p) $ \(Pos _ r) p -> Pos p r
 rot :: Lens' (Pos a) (Rotate a)
 rot = lens (\(Pos _ r) -> r) $ \(Pos p _) r -> Pos p r
-
-angle :: Lens' (Rotate a) a
-angle = lens (\(Rotate a) -> a) $ \_ a -> Rotate a
 
 instance Applicative Pos where
   pure s = Pos (pure s) (pure s)

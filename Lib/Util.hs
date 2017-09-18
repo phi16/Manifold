@@ -13,7 +13,8 @@ module Lib.Util (
   module Lens.Micro.Mtl,
   angleCount, proceedCount,
   R, S1,
-  (+~), (*~), fmod, (??), mix,
+  (+~), (*~), fmod, mix,
+  (??),
   io,
   V1(..), V2(..), V3(..), V4(..),
   Space(..), Arith(..), Linear, Euclidean,
@@ -51,11 +52,11 @@ fmod e m = e + (-1) * fromIntegral (floor (e/m)) * m
 mix :: Num a => a -> a -> a -> a
 mix a b x = a + (b - a) * x
 
-io :: MonadIO m => IO a -> m a
-io = liftIO
-
 (??) :: (a -> b -> c) -> b -> a -> c
 (f ?? y) x = f x y
+
+io :: MonadIO m => IO a -> m a
+io = liftIO
 
 class V1 a b | a -> b where
   x :: Lens' a b

@@ -9,6 +9,7 @@ import Haste.Foreign
 import Haste.Graphics.AnimationFrame
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.IORef
 
 scrW :: R
 scrW = constant "scrW"
@@ -33,7 +34,10 @@ frameStep = do
 
 run :: a -> (a -> IO a) -> IO ()
 run initial step = concurrent $ do
-  stepper <- statefully initial (\s _ -> io $ Just <$> step s)
+  sRef <- io $ newIORef initial
   forever $ do
-    stepper ! ()
+    io $ do
+      s <- readIORef sRef
+      s' <- step s
+      writeIORef sRef s'
     frameStep

@@ -464,6 +464,7 @@ window.addEventListener("load",_=>{
     }else if(sect1)sel = 1;
     else if(sect2)sel = 2;
     if(sel==0)return [];
+
     let p1, p2;
     if(sel==1){
       p1 = sect1.p1;
@@ -472,10 +473,6 @@ window.addEventListener("load",_=>{
       p1 = sect2.p2;
       p2 = sect2.p1;
     }
-    const dx = p1.wx - p2.wx;
-    const dy = p1.wy - p2.wy;
-    const dz = p1.wz - p2.wz;
-    const d = Math.sqrt(dx*dx+dy*dy*dz*dz);
     drawObject({
       polygon:[[
         {wx:p1.wx,wy:p1.wy,wz:p1.wz,r:1,a:1,t:0},
@@ -483,8 +480,18 @@ window.addEventListener("load",_=>{
         {wx:0,wy:0,wz:0,r:1,a:1,t:0}
       ]]
     });
-    console.log(d);
-    return [];
+    return [{
+      w1x:p1.wx,
+      w1y:p1.wy,
+      w1z:p1.wz,
+      w2x:p2.wx,
+      w2y:p2.wy,
+      w2z:p2.wz,
+      c1x:p1.lx,
+      c1y:p1.ly,
+      c2x:p2.lx,
+      c2y:p2.ly,
+    }];
   };
   drawObject = o=>{
     let tIndex = 0;

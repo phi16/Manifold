@@ -49,38 +49,58 @@ toLocal v = Local lx ly where
 -- ContactPoint
 
 data ContactPoint = ContactPoint {
+  _world1 :: !(World R),
+  _world2 :: !(World R),
   _contact1 :: !(Local R),
-  _contact2 :: !(Local R),
-  _normal1 :: !(World R),
-  _normal2 :: !(World R)
+  _contact2 :: !(Local R)
 } deriving Show
 
+world1 :: Lens' ContactPoint (World R)
+world1 = lens _world1 $ \c v -> c {_world1 = v}
+world2 :: Lens' ContactPoint (World R)
+world2 = lens _world2 $ \c v -> c {_world2 = v}
 contact1 :: Lens' ContactPoint (Local R)
 contact1 = lens _contact1 $ \c v -> c {_contact1 = v}
 contact2 :: Lens' ContactPoint (Local R)
 contact2 = lens _contact2 $ \c v -> c {_contact2 = v}
-normal1 :: Lens' ContactPoint (World R)
-normal1 = lens _normal1 $ \c v -> c {_normal1 = v}
-normal2 :: Lens' ContactPoint (World R)
-normal2 = lens _normal2 $ \c v -> c {_normal2 = v}
 
 instance FromAny ContactPoint where
   fromAny a = ContactPoint
-    <$> (Local
+    <$> (World
+      <$> get a "w1x"
+      <*> get a "w1y"
+      <*> get a "w1z")
+    <*> (World
+      <$> get a "w2x"
+      <*> get a "w2y"
+      <*> get a "w2z")
+    <*> (Local
       <$> get a "c1x"
       <*> get a "c1y")
     <*> (Local
       <$> get a "c2x"
       <*> get a "c2y")
-    <*> (World
-      <$> get a "n1x"
-      <*> get a "n1y"
-      <*> get a "n1z")
-    <*> (World
-      <$> get a "n2x"
-      <*> get a "n2y"
-      <*> get a "n2z")
 
 -- Constraint
 
-type Constraint = () -- TODO
+data Constraint = Constraint {
+  _index1 :: !Int,
+  _index2 :: !Int,
+  _J1 :: !(Pos R),
+  _J2 :: !(Pos R),
+  _depth :: R
+} deriving Show
+
+index1 :: Lens' Constraint Int
+index1 = lens _index1 $ \c v -> c {_index1 = v}
+index2 :: Lens' Constraint Int
+index2 = lens _index2 $ \c v -> c {_index2 = v}
+j1 :: Lens' Constraint (Pos R)
+j1 = lens _J1 $ \c v -> c {_J1 = v}
+j2 :: Lens' Constraint (Pos R)
+j2 = lens _J2 $ \c v -> c {_J2 = v}
+depth :: Lens' Constraint R
+depth = lens _depth $ \c v -> c {_depth = v}
+
+jv :: Constraint -> Pos R -> Pos R -> R
+jv c v1 v2 = dot v1 (c^.j1) - dot v2 (c^.j2)

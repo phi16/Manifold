@@ -44,6 +44,7 @@ instance V3 (World a) a where
   z = lens (\(World _ _ z) -> z) $ \(World x y _) z -> World x y z
 
 field :: Field a => World a -> a
+-- field p = p^.y -- Plane
 field p = length p - 1 -- Sphere
 {- field (World x y z) = let -- Torus
     qx = sqrt (x^2+z^2) - 0.8

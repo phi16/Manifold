@@ -11,7 +11,7 @@ import Lib.World
 
 -- Local
 
-data Local a = Local a a
+data Local a = Local !a !a
   deriving (Show, Functor, Foldable)
 
 instance Applicative Local where
@@ -48,10 +48,10 @@ toLocal v = Local lx ly where
 -- ContactPoint
 
 data ContactPoint = ContactPoint {
-  _contact1 :: Local R,
-  _contact2 :: Local R,
-  _normal1 :: World R,
-  _normal2 :: World R
+  _contact1 :: !(Local R),
+  _contact2 :: !(Local R),
+  _normal1 :: !(World R),
+  _normal2 :: !(World R)
 } deriving Show
 
 contact1 :: Lens' ContactPoint (Local R)

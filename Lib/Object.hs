@@ -31,7 +31,7 @@ angle = lens (\(Rotate a) -> a) $ \_ a -> Rotate a
 
 -- Pos
 
-data Pos a = Pos (World a) (Rotate a)
+data Pos a = Pos !(World a) !(Rotate a)
   deriving (Show, Functor)
 
 place :: Lens' (Pos a) (World a)
@@ -75,8 +75,8 @@ instance Show Shape where
 -- Ratio
 
 data Ratio a = Ratio {
-  _ratio :: a,
-  _whole :: a
+  _ratio :: !a,
+  _whole :: !a
 } deriving Show
 
 ratio :: Lens' (Ratio a) a
@@ -87,9 +87,9 @@ whole = lens _whole $ \c v -> c {_whole = v}
 -- Vertex
 
 data Vertex a = Vertex {
-  _worldPos :: World a,
-  _axisPos :: Ratio a,
-  _anglePos :: Rotate a
+  _worldPos :: !(World a),
+  _axisPos :: !(Ratio a),
+  _anglePos :: !(Rotate a)
 } deriving Show
 
 worldPos :: Lens' (Vertex a) (World a)
@@ -101,7 +101,7 @@ anglePos = lens _anglePos $ \c v -> c {_anglePos = v}
 
 -- Polygon
 
-data Polygon a = Polygon (Vertex a) (Vertex a) (Vertex a)
+data Polygon a = Polygon !(Vertex a) !(Vertex a) !(Vertex a)
   deriving Show
 
 instance V1 (Polygon a) (Vertex a) where
@@ -115,17 +115,17 @@ instance V3 (Polygon a) (Vertex a) where
 
 data Object = Object {
   -- property
-  _shape :: Shape,
-  _gravity :: World R,
-  _massInv :: Pos R,
+  _shape :: !Shape,
+  _gravity :: !(World R),
+  _massInv :: !(Pos R),
   -- state
-  _coord :: Pos R,
-  _veloc :: Pos R,
-  _rotAxis :: World R,
+  _coord :: !(Pos R),
+  _veloc :: !(Pos R),
+  _rotAxis :: !(World R),
   -- cache
-  _surface :: World R,
-  _polygon :: [Polygon R],
-  _outline :: [Vertex R]
+  _surface :: !(World R),
+  _polygon :: ![Polygon R],
+  _outline :: ![Vertex R]
 } deriving Show
 
 shape :: Lens' Object Shape
@@ -176,7 +176,7 @@ make (Shape s) rho c v ra = let
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
     g = World 0 0.5 (-1)
-  in fitO $ Object (Shape s) g mi c v ra undefined undefined undefined
+  in fitO $ Object (Shape s) g mi c v ra 0 [] []
 
 generatePolygon :: Object -> ([Polygon R], [Vertex R])
 generatePolygon o = S.evalState ?? o $ do

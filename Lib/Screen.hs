@@ -16,15 +16,15 @@ scrW = constant "scrW"
 scrH :: R
 scrH = constant "scrH"
 refresh :: IO ()
-refresh = ffi "refresh"
+refresh = ffi "__strict(refresh)"
 draw :: IO ()
-draw = ffi "draw"
+draw = ffi "__strict(draw)"
 vertex :: R -> R -> R -> R -> R -> R -> IO ()
-vertex = ffi "vertex"
+vertex = ffi "__strict(vertex)"
 drawTriangles :: IO ()
-drawTriangles = ffi "drawTriangles"
+drawTriangles = ffi "__strict(drawTriangles)"
 compile :: JSString -> JSString -> IO ()
-compile = ffi "compile"
+compile = ffi "__strict(compile)"
 
 frameStep :: CIO ()
 frameStep = do

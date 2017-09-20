@@ -5,6 +5,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Lib.Object where
 
@@ -99,6 +100,15 @@ axisPos = lens _axisPos $ \c v -> c {_axisPos = v}
 anglePos :: Lens' (Vertex a) (Rotate a)
 anglePos = lens _anglePos $ \c v -> c {_anglePos = v}
 
+instance ToAny (Vertex R) where
+  toAny (Vertex w (Ratio r a) (Rotate t)) = toObject $ fmap toAny <$> [
+      ("wx", w^.x),
+      ("wy", w^.y),
+      ("wz", w^.z),
+      ("lx", r*a*cos t),
+      ("ly", r*a*sin t)
+    ]
+
 -- Polygon
 
 data Polygon a = Polygon !(Vertex a) !(Vertex a) !(Vertex a)
@@ -110,6 +120,9 @@ instance V2 (Polygon a) (Vertex a) where
   y = lens (\(Polygon _ y _) -> y) $ \(Polygon x _ z) y -> Polygon x y z
 instance V3 (Polygon a) (Vertex a) where
   z = lens (\(Polygon _ _ z) -> z) $ \(Polygon x y _) z -> Polygon x y z
+
+instance ToAny (Polygon R) where
+  toAny (Polygon x y z) = listToAny [x,y,z]
 
 -- Object
 
@@ -242,3 +255,9 @@ drawObject o = do
         (v^.axisPos.whole)
         (v^.anglePos.angle)
   drawTriangles
+
+instance ToAny Object where
+  toAny o = toObject [
+      ("polygon", toAny $ o^.polygon),
+      ("outline", toAny $ o^.outline)
+    ]

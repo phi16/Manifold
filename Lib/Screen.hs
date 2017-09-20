@@ -5,7 +5,6 @@ module Lib.Screen where
 import Lib.Util
 import Haste
 import Haste.Concurrent
-import Haste.Foreign
 import Haste.Graphics.AnimationFrame
 import Control.Monad
 import Control.Monad.IO.Class

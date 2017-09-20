@@ -2,6 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Lib.Constraint where
 
@@ -62,6 +63,23 @@ normal1 :: Lens' ContactPoint (World R)
 normal1 = lens _normal1 $ \c v -> c {_normal1 = v}
 normal2 :: Lens' ContactPoint (World R)
 normal2 = lens _normal2 $ \c v -> c {_normal2 = v}
+
+instance FromAny ContactPoint where
+  fromAny a = ContactPoint
+    <$> (Local
+      <$> get a "c1x"
+      <*> get a "c1y")
+    <*> (Local
+      <$> get a "c2x"
+      <*> get a "c2y")
+    <*> (World
+      <$> get a "n1x"
+      <*> get a "n1y"
+      <*> get a "n1z")
+    <*> (World
+      <$> get a "n2x"
+      <*> get a "n2y"
+      <*> get a "n2z")
 
 -- Constraint
 

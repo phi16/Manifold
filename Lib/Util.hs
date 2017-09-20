@@ -11,6 +11,7 @@ module Lib.Util (
   module Lens.Micro,
   module Lens.Micro.GHC,
   module Lens.Micro.Mtl,
+  module Haste.Foreign,
   angleCount, proceedCount,
   R, S1,
   (+~), (*~), fmod, mix,
@@ -28,7 +29,7 @@ import Control.Monad.IO.Class
 import Lens.Micro
 import Lens.Micro.GHC
 import Lens.Micro.Mtl
-import Haste.Foreign
+import Haste.Foreign hiding (has)
 
 angleCount :: Int
 angleCount = constant "angleCount"

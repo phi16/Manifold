@@ -7,6 +7,7 @@ let compile = _=>_;
 let draw = _=>_;
 let vertex = _=>_;
 let drawTriangles = _=>_;
+let collide = _=>_;
 
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
@@ -337,5 +338,92 @@ window.addEventListener("load",_=>{
     gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
     gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
     tIndex = 0;
+  };
+  collide = (o1,o2)=>{
+    function polygonNormal(a,b,c){
+      const d1x = c.wx-a.wx;
+      const d1y = c.wy-a.wy;
+      const d1z = c.wz-a.wz;
+      const d2x = c.wx-b.wx;
+      const d2y = c.wy-b.wy;
+      const d2z = c.wz-b.wz;
+      const rx = d1y*d2z-d2y*d1z;
+      const ry = d1z*d2x-d2z*d1x;
+      const rz = d1x*d2y-d2x*d1y;
+      const rl = Math.sqrt(rx*rx+ry*ry+rz*rz);
+      return {
+        x:rx/rl,
+        y:ry/rl,
+        z:rz/rl
+      };
+    }
+    function lineDist(l0,l1,l2,p){
+      const d1x = p.x;
+      const d1y = p.y;
+      const d1z = p.z;
+      const d2x = l2.wx-l1.wx;
+      const d2y = l2.wy-l1.wy;
+      const d2z = l2.wz-l1.wz;
+      const nx = d1y*d2z-d2y*d1z;
+      const ny = d1z*d2x-d2z*d1x;
+      const nz = d1x*d2y-d2x*d1y;
+      const pDist =
+        (p.x-l1.wx)*nx +
+        (p.y-l1.wy)*ny +
+        (p.z-l1.wz)*nz;
+      const oDist =
+        (l0.wx-l1.wx)*nx +
+        (l0.wy-l1.wy)*ny +
+        (l0.wz-l1.wz)*nz;
+      return pDist / oDist;
+    }
+    function intersect(os,ss){
+      const res = [];
+      os.forEach(o=>{
+        for(let i=0;i<ss.length;i++){
+          const s = ss[i];
+          const wp1 = s[0];
+          const wp2 = s[1];
+          const wp3 = s[2];
+          const n = polygonNormal(wp1,wp2,wp3);
+          const dp =
+            (o.wx-wp1.wx)*n.x +
+            (o.wy-wp1.wy)*n.y +
+            (o.wz-wp1.wz)*n.z;
+          if(Math.abs(dp) >= 0.1)continue;
+          const p = {
+            x:o.wx - n.x*dp,
+            y:o.wy - n.y*dp,
+            z:o.wz - n.z*dp
+          };
+          const d1 = lineDist(wp1,wp2,wp3,p);
+          const d2 = lineDist(wp2,wp3,wp1,p);
+          const d3 = lineDist(wp3,wp1,wp2,p);
+          if(d1<0 || d2<0 || d3<0)continue;
+          const lx =
+            wp1.lx*d1 +
+            wp2.lx*d2 +
+            wp3.lx*d3;
+          const ly =
+            wp1.ly*d1 +
+            wp2.ly*d2 +
+            wp3.ly*d3;
+          const dlx = lx - o.lx;
+          const dly = ly - o.ly;
+          if(dlx*dlx + dly*dly < 0.001)continue; // same point
+          res.push({
+            wx: o.wx,
+            wy: o.wy,
+            wz: o.wz,
+            lx: lx,
+            ly: ly
+          });
+        }
+      });
+      return res;
+    }
+    const sect1 = intersect(o1.outline,o2.polygon);
+    const sect2 = intersect(o2.outline,o1.polygon);
+    return [];
   };
 });

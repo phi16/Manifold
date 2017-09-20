@@ -24,8 +24,10 @@ initial :: IO State
 initial = do
   let
     ra = World 0 0 1
-    p1 = World (-0.8) 0.5 0
-    p2 = World 1.3 0 0
+    -- p1 = World (-0.8) 0.5 0
+    -- p2 = World 1.3 0 0
+    p1 = World 0 0.5 (-0.5)
+    p2 = World 0.4 0 0
     v1 = World (-0.2) 0 1
     v2 = World 0 (-0.1) 0.3
     o1 = make (circle 0.2) 1.2 (Pos p1 0) (Pos v1 0) ra

@@ -188,6 +188,7 @@ window.addEventListener("load",_=>{
       float factor = 1.;
       if(length(borderCoord) > 0.9) factor = 0.5;
       if(abs(localCoord.x) < 0.01 && localCoord.y < 0.01) factor = 0.5;
+      if(factor!=0.5)discard;
       gl_FragColor = vec4(color*factor,1);
     }
   `;
@@ -330,25 +331,58 @@ window.addEventListener("load",_=>{
         z:rz/rl
       };
     }
-    function lineDist(l0,l1,l2,p){
-      const d1x = p.x;
-      const d1y = p.y;
-      const d1z = p.z;
+    function lineDistRatio(l0,l1,l2,p){
+      const d1x = l0.wx-l1.wx;
+      const d1y = l0.wy-l1.wy;
+      const d1z = l0.wz-l1.wz;
       const d2x = l2.wx-l1.wx;
       const d2y = l2.wy-l1.wy;
       const d2z = l2.wz-l1.wz;
-      const nx = d1y*d2z-d2y*d1z;
-      const ny = d1z*d2x-d2z*d1x;
-      const nz = d1x*d2y-d2x*d1y;
-      const pDist =
-        (p.x-l1.wx)*nx +
-        (p.y-l1.wy)*ny +
-        (p.z-l1.wz)*nz;
+      const d  = d1x*d2x+d1y*d2y+d1z*d2z;
+      const dl = d2x*d2x+d2y*d2y+d2z*d2z;
+      const t = d / dl;
+      const nx = l1.wx+t*d2x-l0.wx;
+      const ny = l1.wy+t*d2y-l0.wy;
+      const nz = l1.wz+t*d2z-l0.wz;
       const oDist =
         (l0.wx-l1.wx)*nx +
         (l0.wy-l1.wy)*ny +
         (l0.wz-l1.wz)*nz;
+      const pDist =
+        (p.x-l1.wx)*nx +
+        (p.y-l1.wy)*ny +
+        (p.z-l1.wz)*nz;
       return pDist / oDist;
+    }
+    function lineDist(l1,l2,p){
+      const d1x = p.wx-l1.wx;
+      const d1y = p.wy-l1.wy;
+      const d1z = p.wz-l1.wz;
+      const d2x = l2.wx-l1.wx;
+      const d2y = l2.wy-l1.wy;
+      const d2z = l2.wz-l1.wz;
+      const d = d1x*d2x+d1y*d2y+d1z*d2z;
+      const dl = d2x*d2x+d2y*d2y+d2z*d2z;
+      const t = d / dl;
+      const hx = l1.wx+t*d2x;
+      const hy = l1.wy+t*d2y;
+      const hz = l1.wz+t*d2z;
+      const nx = hx-p.wx;
+      const ny = hy-p.wy;
+      const nz = hz-p.wz;
+      const nl = Math.sqrt(nx*nx+ny*ny+nz*nz);
+      const pDist =
+        (p.wx-l1.wx)*nx +
+        (p.wy-l1.wy)*ny +
+        (p.wz-l1.wz)*nz;
+      return {
+        d:-pDist / nl,
+        wx:hx,
+        wy:hy,
+        wz:hz,
+        lx:l1.lx+t*(l2.lx-l1.lx),
+        ly:l1.ly+t*(l2.ly-l1.ly)
+      };
     }
     function intersect(os,ss){
       const res = [];
@@ -369,10 +403,10 @@ window.addEventListener("load",_=>{
             y:o.wy - n.y*dp,
             z:o.wz - n.z*dp
           };
-          const d1 = lineDist(wp1,wp2,wp3,p);
-          const d2 = lineDist(wp2,wp3,wp1,p);
-          const d3 = lineDist(wp3,wp1,wp2,p);
-          if(d1<0 || d2<0 || d3<0)continue;
+          const d1 = lineDistRatio(wp1,wp2,wp3,p);
+          const d2 = lineDistRatio(wp2,wp3,wp1,p);
+          const d3 = lineDistRatio(wp3,wp1,wp2,p);
+          if(d1<0 || d2<0 || d3<0 || isNaN(d1) || isNaN(d2) || isNaN(d3))continue;
           const lx =
             wp1.lx*d1 +
             wp2.lx*d2 +
@@ -395,8 +429,61 @@ window.addEventListener("load",_=>{
       });
       return res;
     }
-    const sect1 = intersect(o1.outline,o2.polygon);
-    const sect2 = intersect(o2.outline,o1.polygon);
+    function maxDistance(vs,os){
+      let longest = 0;
+      let pair = null;
+      vs.forEach(v=>{
+        let shortest = 0;
+        let cand = null;
+        for(let i=0;i<os.length;i++){
+          const o1 = os[i];
+          const o2 = os[(i+1)%os.length];
+          const d = lineDist(o1,o2,v);
+          if(shortest == 0 || shortest > d.d){
+            shortest = d.d;
+            cand = {
+              d:d.d,
+              p1:v,
+              p2:{wx:d.wx,wy:d.wy,wz:d.wz,lx:d.lx,ly:d.ly}
+            };
+          }
+        }
+        if(longest < cand.d){
+          longest = cand.d;
+          pair = cand;
+        }
+      });
+      return pair;
+    }
+    const sect1 = maxDistance(intersect(o1.outline,o2.polygon),o2.outline);
+    const sect2 = maxDistance(intersect(o2.outline,o1.polygon),o1.outline);
+    let sel = 0;
+    if(sect1 && sect2){
+      if(sect1.d < sect2.d)sel = 1;
+      else sel = 2;
+    }else if(sect1)sel = 1;
+    else if(sect2)sel = 2;
+    if(sel==0)return [];
+    let p1, p2;
+    if(sel==1){
+      p1 = sect1.p1;
+      p2 = sect1.p2;
+    }else{
+      p1 = sect2.p2;
+      p2 = sect2.p1;
+    }
+    const dx = p1.wx - p2.wx;
+    const dy = p1.wy - p2.wy;
+    const dz = p1.wz - p2.wz;
+    const d = Math.sqrt(dx*dx+dy*dy*dz*dz);
+    drawObject({
+      polygon:[[
+        {wx:p1.wx,wy:p1.wy,wz:p1.wz,r:1,a:1,t:0},
+        {wx:p2.wx,wy:p2.wy,wz:p2.wz,r:1,a:1,t:0},
+        {wx:0,wy:0,wz:0,r:1,a:1,t:0}
+      ]]
+    });
+    console.log(d);
     return [];
   };
   drawObject = o=>{
@@ -426,7 +513,7 @@ window.addEventListener("load",_=>{
     };
     o.polygon.forEach(p=>{
       p.forEach(v=>{
-        vertex(v.wx, v.wy, v.wz, v.r, v.a, v.t);
+        vertex(v.wx,v.wy,v.wz,v.r,v.a,v.t);
       });
     });
     drawTriangles();

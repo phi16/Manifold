@@ -5,9 +5,8 @@ let scrW = 0, scrH = 0;
 let refresh = _=>_;
 let compile = _=>_;
 let draw = _=>_;
-let vertex = _=>_;
-let drawTriangles = _=>_;
 let collide = _=>_;
+let drawObject = _=>_;
 
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
@@ -47,7 +46,6 @@ window.addEventListener("load",_=>{
   const tvbo = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
   gl.bufferData(gl.ARRAY_BUFFER,tverts,gl.DYNAMIC_DRAW);
-  let tIndex = 0;
 
   const vsSource = `
     precision mediump float;
@@ -208,7 +206,6 @@ window.addEventListener("load",_=>{
 
   refresh = _=>{
     gl.clear(gl.COLOR_BUFFER_BIT);
-    tIndex = 0;
   };
   compile = (field,grad)=>{
     function makeShader(type,source){
@@ -315,30 +312,6 @@ window.addEventListener("load",_=>{
     gl.enableVertexAttribArray(0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   };
-  vertex = (x,y,z,a,w,r)=>{
-    tverts[tIndex+0] = x;
-    tverts[tIndex+1] = y;
-    tverts[tIndex+2] = z;
-    tverts[tIndex+3] = a;
-    tverts[tIndex+4] = w;
-    tverts[tIndex+5] = r;
-    tIndex += 6;
-  };
-  drawTriangles = _=>{
-    if(!tprogram)return;
-    gl.useProgram(tprogram);
-    gl.uniform3f(tcamLocation,camera[0],camera[1],camera[2]);
-    gl.uniformMatrix3fv(ttransLocation,false,transformI);
-    gl.uniform1f(tfovLocation,fov);
-    gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
-    gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);
-    gl.vertexAttribPointer(1,1,gl.FLOAT,false,24,12);
-    gl.vertexAttribPointer(2,1,gl.FLOAT,false,24,16);
-    gl.vertexAttribPointer(3,1,gl.FLOAT,false,24,20);
-    gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
-    gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
-    tIndex = 0;
-  };
   collide = (o1,o2)=>{
     function polygonNormal(a,b,c){
       const d1x = c.wx-a.wx;
@@ -425,5 +398,37 @@ window.addEventListener("load",_=>{
     const sect1 = intersect(o1.outline,o2.polygon);
     const sect2 = intersect(o2.outline,o1.polygon);
     return [];
+  };
+  drawObject = o=>{
+    let tIndex = 0;
+    function vertex(x,y,z,a,w,r){
+      tverts[tIndex+0] = x;
+      tverts[tIndex+1] = y;
+      tverts[tIndex+2] = z;
+      tverts[tIndex+3] = a;
+      tverts[tIndex+4] = w;
+      tverts[tIndex+5] = r;
+      tIndex += 6;
+    }
+    function drawTriangles(){
+      if(!tprogram)return;
+      gl.useProgram(tprogram);
+      gl.uniform3f(tcamLocation,camera[0],camera[1],camera[2]);
+      gl.uniformMatrix3fv(ttransLocation,false,transformI);
+      gl.uniform1f(tfovLocation,fov);
+      gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
+      gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);
+      gl.vertexAttribPointer(1,1,gl.FLOAT,false,24,12);
+      gl.vertexAttribPointer(2,1,gl.FLOAT,false,24,16);
+      gl.vertexAttribPointer(3,1,gl.FLOAT,false,24,20);
+      gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
+      gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
+    };
+    o.polygon.forEach(p=>{
+      p.forEach(v=>{
+        vertex(v.wx, v.wy, v.wz, v.r, v.a, v.t);
+      });
+    });
+    drawTriangles();
   };
 });

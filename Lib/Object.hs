@@ -106,7 +106,10 @@ instance ToAny (Vertex R) where
       ("wy", w^.y),
       ("wz", w^.z),
       ("lx", r*a*cos t),
-      ("ly", r*a*sin t)
+      ("ly", r*a*sin t),
+      ("r", r),
+      ("a", a),
+      ("t", t)
     ]
 
 -- Polygon
@@ -137,8 +140,8 @@ data Object = Object {
   _rotAxis :: !(World R),
   -- cache
   _surface :: !(World R),
-  _polygon :: ![Polygon R],
-  _outline :: ![Vertex R]
+  _polygon :: !JSAny, -- [Polygon R],
+  _outline :: !JSAny -- [Vertex R]
 } deriving Show
 
 shape :: Lens' Object Shape
@@ -157,9 +160,9 @@ rotAxis = lens _rotAxis $ \c v -> c {_rotAxis = v}
 
 surface :: Lens' Object (World R)
 surface = lens _surface $ \c v -> c {_surface = v}
-polygon :: Lens' Object [Polygon R]
+polygon :: Lens' Object JSAny
 polygon = lens _polygon $ \c v -> c {_polygon = v}
-outline :: Lens' Object [Vertex R]
+outline :: Lens' Object JSAny
 outline = lens _outline $ \c v -> c {_outline = v}
 
 static :: SimpleGetter Object Object
@@ -189,7 +192,7 @@ make (Shape s) rho c v ra = let
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
     g = World 0 0.5 (-1)
-  in fitO $ Object (Shape s) g mi c v ra 0 [] []
+  in fitO $ Object (Shape s) g mi c v ra 0 nullValue nullValue
 
 generatePolygon :: Object -> ([Polygon R], [Vertex R])
 generatePolygon o = S.evalState ?? o $ do
@@ -240,24 +243,14 @@ fitO o = let
     & \o -> let
         (p,l) = generatePolygon o
       in o
-        & polygon .~ p
-        & outline .~ l
+        & polygon .~ toAny p
+        & outline .~ toAny l
 
 drawObject :: Object -> IO ()
-drawObject o = do
-  for_ (o^.polygon) $ \p ->
-    for_ [p^.x,p^.y,p^.z] $ \v ->
-      vertex
-        (v^.worldPos.x)
-        (v^.worldPos.y)
-        (v^.worldPos.z)
-        (v^.axisPos.ratio)
-        (v^.axisPos.whole)
-        (v^.anglePos.angle)
-  drawTriangles
+drawObject = ffi "drawObject"
 
 instance ToAny Object where
   toAny o = toObject [
-      ("polygon", toAny $ o^.polygon),
-      ("outline", toAny $ o^.outline)
+      ("polygon", o^.polygon),
+      ("outline", o^.outline)
     ]

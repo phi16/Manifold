@@ -84,3 +84,6 @@ class (Functor f, Space f) => Arith f where
 type Field a = (Floating a, Ord a)
 type Linear f a = (Applicative f, Space f, Field a)
 type Euclidean f a = (Linear f a, Arith f)
+
+instance Show JSAny where
+  show _ = "[JSAny]"

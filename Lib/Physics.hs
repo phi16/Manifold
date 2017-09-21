@@ -60,8 +60,8 @@ generateConstraints = do
           n2 = normal w2
           r1 = scale (length l1) * normalize d1
           r2 = scale (length l2) * normalize d2
-          j1 = Pos (n`perpTo`n1) (Rotate $ length (cross r1 n))
-          j2 = Pos (n`perpTo`n2) (Rotate $ length (cross r2 n))
+          j1 = Pos (n`perpTo`n1) (Rotate $ (cross n r1)^.y)
+          j2 = Pos (n`perpTo`n2) (Rotate $ (cross n r2)^.y)
         return $ Constraint i1 i2 j1 j2 d
 
 solveConstraints :: [Constraint] -> S.StateT PhysWorld IO ()

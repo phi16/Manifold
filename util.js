@@ -188,7 +188,6 @@ window.addEventListener("load",_=>{
       float factor = 1.;
       if(length(borderCoord) > 0.9) factor = 0.5;
       if(abs(localCoord.x) < 0.01 && localCoord.y < 0.01) factor = 0.5;
-      if(factor!=0.5)discard;
       gl_FragColor = vec4(color*factor,1);
     }
   `;
@@ -472,13 +471,13 @@ window.addEventListener("load",_=>{
       p1 = sect2.p2;
       p2 = sect2.p1;
     }
-    drawObject({
+    /*drawObject({
       polygon:[[
         {wx:p1.wx,wy:p1.wy,wz:p1.wz,r:1,a:1,t:0},
         {wx:p2.wx,wy:p2.wy,wz:p2.wz,r:1,a:1,t:0},
         {wx:0,wy:0,wz:0,r:1,a:1,t:0}
       ]]
-    });
+    });*/
     return [{
       w1x:p1.wx,
       w1y:p1.wy,

@@ -23,7 +23,7 @@ import qualified Data.Array as A
 import qualified "mtl" Control.Monad.State as S
 
 dt :: R
-dt = 0.01
+dt = 0.05
 
 applyGravity :: Object -> Object
 applyGravity o = o & veloc.place +~ g * scale dt where

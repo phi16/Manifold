@@ -23,10 +23,10 @@ type State = PhysWorld
 initial :: IO State
 initial = do
   let
-    ra = World 0 0 1
+    ra = World 0 0.3 1
     p1 = World (-0.8) 0.5 0 -- torus
     p2 = World 1.3 0 0
-    v1 = World 0 0 0.3
+    v1 = World 0 0 0.6
     v2 = World 0 (-0.1) 0.3
     -- p1 = World 0 0.5 (-0.5) -- sphere
     -- p2 = World 0.4 0 0
@@ -36,8 +36,8 @@ initial = do
     -- p2 = World (0.1) 0 0
     -- v1 = World 0 0 0
     -- v2 = World 0 0 0
-    o1 = make (circle 0.2) 1.2 (Pos p1 0) (Pos v1 0) ra
-    o2 = make (square 0.2) 1.2 (Pos p2 0) (Pos v2 2) ra
+    o1 = make (circle 0.2) 1.2 (Pos p1 0) (Pos v1 (-2)) ra
+    o2 = make (square 0.2) 1.2 (Pos p2 0) (Pos v2 4) ra
     ls = [o1,o2]
   return $ listArray (0,length ls-1) ls
 

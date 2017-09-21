@@ -52,7 +52,9 @@ data ContactPoint = ContactPoint {
   _world1 :: !(World R),
   _world2 :: !(World R),
   _contact1 :: !(Local R),
-  _contact2 :: !(Local R)
+  _contact2 :: !(Local R),
+  _direction1 :: !(World R),
+  _direction2 :: !(World R)
 } deriving Show
 
 world1 :: Lens' ContactPoint (World R)
@@ -63,6 +65,10 @@ contact1 :: Lens' ContactPoint (Local R)
 contact1 = lens _contact1 $ \c v -> c {_contact1 = v}
 contact2 :: Lens' ContactPoint (Local R)
 contact2 = lens _contact2 $ \c v -> c {_contact2 = v}
+direction1 :: Lens' ContactPoint (World R)
+direction1 = lens _direction1 $ \c v -> c {_direction1 = v}
+direction2 :: Lens' ContactPoint (World R)
+direction2 = lens _direction2 $ \c v -> c {_direction2 = v}
 
 instance FromAny ContactPoint where
   fromAny a = ContactPoint
@@ -80,6 +86,14 @@ instance FromAny ContactPoint where
     <*> (Local
       <$> get a "c2x"
       <*> get a "c2y")
+    <*> (World
+      <$> get a "d1x"
+      <*> get a "d1y"
+      <*> get a "d1z")
+    <*> (World
+      <$> get a "d2x"
+      <*> get a "d2y"
+      <*> get a "d2z")
 
 -- Constraint
 

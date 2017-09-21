@@ -381,7 +381,10 @@ window.addEventListener("load",_=>{
         wy:hy,
         wz:hz,
         lx:l1.lx+t*(l2.lx-l1.lx),
-        ly:l1.ly+t*(l2.ly-l1.ly)
+        ly:l1.ly+t*(l2.ly-l1.ly),
+        dx:l1.dx+t*(l2.dx-l1.dx),
+        dy:l1.dy+t*(l2.dy-l1.dy),
+        dz:l1.dz+t*(l2.dz-l1.dz)
       };
     }
     function intersect(os,ss){
@@ -418,41 +421,37 @@ window.addEventListener("load",_=>{
           const dlx = lx - o.lx;
           const dly = ly - o.ly;
           if(dlx*dlx + dly*dly < 0.001)continue; // same point
-          res.push({
-            wx: o.wx,
-            wy: o.wy,
-            wz: o.wz,
-            lx: lx,
-            ly: ly
-          });
+          res.push(o);
         }
       });
       return res;
     }
     function maxDistance(vs,os){
-      let longest = 0;
+      let shortest = 0;
       let pair = null;
-      vs.forEach(v=>{
-        let shortest = 0;
+      for(let i=0;i<os.length;i++){
+        const o1 = os[i];
+        const o2 = os[(i+1)%os.length];
+        let longest = 0;
         let cand = null;
-        for(let i=0;i<os.length;i++){
-          const o1 = os[i];
-          const o2 = os[(i+1)%os.length];
+        vs.forEach(v=>{
           const d = lineDist(o1,o2,v);
-          if(shortest == 0 || shortest > d.d){
-            shortest = d.d;
+          if(longest < d.d){
+            longest = d.d;
             cand = {
               d:d.d,
               p1:v,
-              p2:{wx:d.wx,wy:d.wy,wz:d.wz,lx:d.lx,ly:d.ly}
+              p2:d
             };
           }
+        });
+        if(cand){
+          if(shortest == 0 || shortest > cand.d){
+            shortest = cand.d;
+            pair = cand;
+          }
         }
-        if(longest < cand.d){
-          longest = cand.d;
-          pair = cand;
-        }
-      });
+      }
       return pair;
     }
     const sect1 = maxDistance(intersect(o1.outline,o2.polygon),o2.outline);
@@ -491,6 +490,12 @@ window.addEventListener("load",_=>{
       c1y:p1.ly,
       c2x:p2.lx,
       c2y:p2.ly,
+      d1x:p1.dx,
+      d1y:p1.dy,
+      d1z:p1.dz,
+      d2x:p2.dx,
+      d2y:p2.dy,
+      d2z:p2.dz
     }];
   };
   drawObject = o=>{

@@ -51,15 +51,17 @@ generateConstraints = do
       Just o1 <- preuse $ ix i1
       Just o2 <- preuse $ ix i2
       cs <- io $ collide o1 o2
-      for cs $ \(ContactPoint w1 w2 l1 l2) -> do
+      for cs $ \(ContactPoint w1 w2 l1 l2 d1 d2) -> do
         let
           v = w2 - w1
           d = length v
           n = v * scale (1/d)
           n1 = normal w1
-          n2 = normal w1
-          j1 = Pos (n`perpTo`n1) 0 -- TODO
-          j2 = Pos (n`perpTo`n2) 0 -- TODO
+          n2 = normal w2
+          r1 = scale (length l1) * normalize d1
+          r2 = scale (length l2) * normalize d2
+          j1 = Pos (n`perpTo`n1) (Rotate $ length (cross r1 n))
+          j2 = Pos (n`perpTo`n2) (Rotate $ length (cross r2 n))
         return $ Constraint i1 i2 j1 j2 d
 
 solveConstraints :: [Constraint] -> S.StateT PhysWorld IO ()

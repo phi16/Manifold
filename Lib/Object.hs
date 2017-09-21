@@ -90,7 +90,8 @@ whole = lens _whole $ \c v -> c {_whole = v}
 data Vertex a = Vertex {
   _worldPos :: !(World a),
   _axisPos :: !(Ratio a),
-  _anglePos :: !(Rotate a)
+  _anglePos :: !(Rotate a),
+  _direction :: !(World a)
 } deriving Show
 
 worldPos :: Lens' (Vertex a) (World a)
@@ -99,9 +100,11 @@ axisPos :: Lens' (Vertex a) (Ratio a)
 axisPos = lens _axisPos $ \c v -> c {_axisPos = v}
 anglePos :: Lens' (Vertex a) (Rotate a)
 anglePos = lens _anglePos $ \c v -> c {_anglePos = v}
+direction :: Lens' (Vertex a) (World a)
+direction = lens _direction $ \c v -> c {_direction = v}
 
 instance ToAny (Vertex R) where
-  toAny (Vertex w (Ratio r a) (Rotate t)) = toObject $ fmap toAny <$> [
+  toAny (Vertex w (Ratio r a) (Rotate t) d) = toObject $ fmap toAny <$> [
       ("wx", w^.x),
       ("wy", w^.y),
       ("wz", w^.z),
@@ -109,7 +112,10 @@ instance ToAny (Vertex R) where
       ("ly", r*a*sin t),
       ("r", r),
       ("a", a),
-      ("t", t)
+      ("t", t),
+      ("dx", d^.x),
+      ("dy", d^.y),
+      ("dz", d^.z)
     ]
 
 -- Polygon
@@ -210,7 +216,7 @@ generatePolygon o = S.evalState ?? o $ do
         s = sf a
         a' = a + r
         dir = ax * scale (cos a') + ay * scale (sin a')
-        c' = Vertex c (Ratio 0 s) (Rotate a)
+        c' = Vertex c (Ratio 0 s) (Rotate a) 0
       in (c',) $ S.evalState ?? (c,dir) $ do
         for [1..pC] $ \i -> do
           v <- use _2
@@ -218,7 +224,8 @@ generatePolygon o = S.evalState ?? o $ do
           (p,n) <- use $ _1.to fitP
           _1 .= p
           _2 %= fitR n
-          return $ Vertex p (Ratio (i/pC) s) (Rotate a)
+          v' <- use _2
+          return $ Vertex p (Ratio (i/pC) s) (Rotate a) v'
   let
     comp :: (Vertex R, [Vertex R]) -> (Vertex R, [Vertex R]) -> [Polygon R]
     comp (cv,xs) (_,ys) = let

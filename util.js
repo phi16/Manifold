@@ -374,6 +374,8 @@ window.addEventListener("load",_=>{
       let dy = e.offsetY - prevMouseY;
       rdirTo -= dx/80;
       adirTo += dy/80;
+      if(adirTo < -Math.PI/2)adirTo = -Math.PI/2;
+      if(adirTo >  Math.PI/2)adirTo =  Math.PI/2;
       prevMouseX = e.offsetX;
       prevMouseY = e.offsetY;
     }

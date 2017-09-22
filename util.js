@@ -198,11 +198,32 @@ window.addEventListener("load",_=>{
   let tcamLocation, ttransLocation, tfovLocation;
   let bgworldTexLocation, tworldTexLocation;
 
-  let camera = [0,-5,-5];
-  let adir = -0.6;
-  let transform = [1,0,0,0,Math.cos(adir),Math.sin(adir),0,-Math.sin(adir),Math.cos(adir)];
-  let transformI = [1,0,0,0,Math.cos(adir),-Math.sin(adir),0,Math.sin(adir),Math.cos(adir)];
+  let origin = [0,-1.5,0];
+  let adir = -0.4, rdir = 0, cameraDist = 6;
+  let adirTo = adir, rdirTo = rdir;
+  let camera = [0,0,0];
+  let transform = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+  let transformI = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
   let fov = 30/2;
+
+  let prevMouseX = null, prevMouseY;
+  cvs.addEventListener("mousedown",e=>{
+    prevMouseX = e.offsetX;
+    prevMouseY = e.offsetY;
+  });
+  cvs.addEventListener("mousemove",e=>{
+    if(prevMouseX){
+      let dx = e.offsetX - prevMouseX;
+      let dy = e.offsetY - prevMouseY;
+      rdirTo -= dx/80;
+      adirTo += dy/80;
+      prevMouseX = e.offsetX;
+      prevMouseY = e.offsetY;
+    }
+  });
+  cvs.addEventListener("mouseup",e=>{
+    prevMouseX = null;
+  });
 
   refresh = _=>{
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -292,8 +313,35 @@ window.addEventListener("load",_=>{
     gl.enableVertexAttribArray(2);
     gl.enableVertexAttribArray(3);
   };
+  function matMult(a,b){
+    let c = [];
+    for(let i=0;i<9;i++){
+      let s = 0;
+      for(let j=0;j<3;j++){
+        s += a[Math.floor(i/3)*3+j]*b[i%3+j*3];
+      }
+      c.push(s);
+    }
+    return c;
+  }
+  function setCamera(){
+    rdir += (rdirTo - rdir) / 4;
+    adir += (adirTo - adir) / 4;
+    let xRot = [1,0,0,0,Math.cos(adir),Math.sin(adir),0,-Math.sin(adir),Math.cos(adir)];
+    let yRot = [Math.cos(rdir),0,Math.sin(rdir),0,1,0,-Math.sin(rdir),0,Math.cos(rdir)];
+    let xRotI = [1,0,0,0,Math.cos(adir),-Math.sin(adir),0,Math.sin(adir),Math.cos(adir)];
+    let yRotI = [Math.cos(rdir),0,-Math.sin(rdir),0,1,0,Math.sin(rdir),0,Math.cos(rdir)];
+    transform = matMult(xRot,yRot);
+    transformI = matMult(yRotI,xRotI);
+    camera = [
+      -transformI[2]*cameraDist + origin[0],
+      -transformI[5]*cameraDist + origin[1],
+      -transformI[8]*cameraDist + origin[2]
+    ];
+  }
   draw = _=>{
     if(!program)return;
+    setCamera();
     gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
     gl.useProgram(program);
     gl.uniform2f(resLocation,scrW,scrH);

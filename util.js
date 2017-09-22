@@ -295,13 +295,15 @@ window.addEventListener("load",_=>{
     varying vec2 borderCoord;
     varying vec2 localCoord;
     uniform vec3 camera;
+    uniform float hue;
     uniform sampler2D worldTex;
     void main(void){
       vec2 texCoord = screen.xy / screen.z * 0.5 + 0.5;
       float depth = texture2D(worldTex,texCoord).w;
       float surfaceDepth = length(coord - camera);
       if(depth < surfaceDepth - 0.1)discard;
-      vec3 color = coord * 0.5 + 0.5;
+      vec3 color = cos(vec3(1,0,-1)*pi*2./3. + hue*pi*2.) * 0.5 + 0.5;
+      color += coord * 0.4;
       float factor = 1.;
       if(length(borderCoord) > 0.9) factor = 0.5;
       if(abs(localCoord.x) < 0.01 && localCoord.y < 0.01) factor = 0.5;
@@ -312,7 +314,7 @@ window.addEventListener("load",_=>{
   let program, tprogram, bgprogram;
   let resLocation;
   let camLocation, transLocation, fovLocation;
-  let tcamLocation, ttransLocation, tfovLocation;
+  let tcamLocation, ttransLocation, tfovLocation, thueLocation;
   let bgworldTexLocation, tworldTexLocation;
 
   let origin = [0,0,0];
@@ -459,6 +461,7 @@ window.addEventListener("load",_=>{
     ttransLocation = gl.getUniformLocation(tprogram,"transform");
     tfovLocation = gl.getUniformLocation(tprogram,"fov");
     tworldTexLocation = gl.getUniformLocation(tprogram,"worldTex");
+    thueLocation = gl.getUniformLocation(tprogram,"hue");
     gl.uniform1i(tworldTexLocation,0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
@@ -619,12 +622,13 @@ window.addEventListener("load",_=>{
       tverts[tIndex+5] = r;
       tIndex += 6;
     }
-    function drawTriangles(){
+    function drawTriangles(hue){
       if(!tprogram)return;
       gl.useProgram(tprogram);
       gl.uniform3f(tcamLocation,camera[0],camera[1],camera[2]);
       gl.uniformMatrix3fv(ttransLocation,false,transformI);
       gl.uniform1f(tfovLocation,fov);
+      gl.uniform1f(thueLocation,hue);
       gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
       gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);
       gl.vertexAttribPointer(1,1,gl.FLOAT,false,24,12);
@@ -633,14 +637,16 @@ window.addEventListener("load",_=>{
       gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
       gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
     };
-    Object.keys(objects).forEach(ix=>{
+    let indices = Object.keys(objects);
+    indices.forEach(ix=>{
       const o = objects[ix];
+      const hue = ix / indices.length;
       o.polygon.forEach(p=>{
         p.forEach(v=>{
           vertex(v.wx,v.wy,v.wz,v.r,v.a,v.t);
         });
       });
-      drawTriangles();
+      drawTriangles(hue);
       tIndex = 0;
     });
   };

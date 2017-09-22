@@ -198,8 +198,8 @@ window.addEventListener("load",_=>{
   let tcamLocation, ttransLocation, tfovLocation;
   let bgworldTexLocation, tworldTexLocation;
 
-  let origin = [0,-1.5,0];
-  let adir = -0.4, rdir = 0, cameraDist = 6;
+  let origin = [0,0,0];
+  let adir = 0.8, rdir = 0, cameraDist = 6;
   let adirTo = adir, rdirTo = rdir;
   let camera = [0,0,0];
   let transform = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
@@ -325,8 +325,8 @@ window.addEventListener("load",_=>{
     return c;
   }
   function setCamera(){
-    rdir += (rdirTo - rdir) / 4;
-    adir += (adirTo - adir) / 4;
+    rdir += (rdirTo - rdir) / 2;
+    adir += (adirTo - adir) / 2;
     let xRot = [1,0,0,0,Math.cos(adir),Math.sin(adir),0,-Math.sin(adir),Math.cos(adir)];
     let yRot = [Math.cos(rdir),0,Math.sin(rdir),0,1,0,-Math.sin(rdir),0,Math.cos(rdir)];
     let xRotI = [1,0,0,0,Math.cos(adir),-Math.sin(adir),0,Math.sin(adir),Math.cos(adir)];

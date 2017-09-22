@@ -54,7 +54,9 @@ data ContactPoint = ContactPoint {
   _contact1 :: !(Local R),
   _contact2 :: !(Local R),
   _direction1 :: !(World R),
-  _direction2 :: !(World R)
+  _direction2 :: !(World R),
+  _flipped1 :: !Bool,
+  _flipped2 :: !Bool
 } deriving Show
 
 world1 :: Lens' ContactPoint (World R)
@@ -69,6 +71,10 @@ direction1 :: Lens' ContactPoint (World R)
 direction1 = lens _direction1 $ \c v -> c {_direction1 = v}
 direction2 :: Lens' ContactPoint (World R)
 direction2 = lens _direction2 $ \c v -> c {_direction2 = v}
+flipped1 :: Lens' ContactPoint Bool
+flipped1 = lens _flipped1 $ \c v -> c {_flipped1 = v}
+flipped2 :: Lens' ContactPoint Bool
+flipped2 = lens _flipped2 $ \c v -> c {_flipped2 = v}
 
 instance FromAny ContactPoint where
   fromAny a = ContactPoint
@@ -94,6 +100,8 @@ instance FromAny ContactPoint where
       <$> get a "d2x"
       <*> get a "d2y"
       <*> get a "d2z")
+    <*> get a "flipped1"
+    <*> get a "flipped2"
 
 -- Constraint
 

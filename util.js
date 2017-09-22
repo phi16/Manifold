@@ -1,5 +1,6 @@
 const angleCount = 24;
 const proceedCount = 4;
+const projective = true;
 
 let scrW = 0, scrH = 0;
 let refresh = _=>_;
@@ -276,9 +277,10 @@ window.addEventListener("load",_=>{
     uniform vec3 camera;
     uniform mat3 transform;
     uniform float fov;
+    uniform float projFactor;
     void main(void){
-      coord = position;
-      vec3 p = transform * (position - camera);
+      coord = position * projFactor;
+      vec3 p = transform * (coord - camera);
       p.x *= 3./4.;
       p.xy /= tan(fov*pi/180.);
       screen = p;
@@ -314,7 +316,7 @@ window.addEventListener("load",_=>{
   let program, tprogram, bgprogram;
   let resLocation;
   let camLocation, transLocation, fovLocation;
-  let tcamLocation, ttransLocation, tfovLocation, thueLocation;
+  let tcamLocation, ttransLocation, tfovLocation, thueLocation, tprojFactorLocation;
   let bgworldTexLocation, tworldTexLocation;
 
   let origin = [0,0,0];
@@ -462,6 +464,7 @@ window.addEventListener("load",_=>{
     tfovLocation = gl.getUniformLocation(tprogram,"fov");
     tworldTexLocation = gl.getUniformLocation(tprogram,"worldTex");
     thueLocation = gl.getUniformLocation(tprogram,"hue");
+    tprojFactorLocation = gl.getUniformLocation(tprogram,"projFactor");
     gl.uniform1i(tworldTexLocation,0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
@@ -527,11 +530,20 @@ window.addEventListener("load",_=>{
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   };
   collide = (o1,o2)=>{
+    let form = _=>_; // identity or flipper
+    let identity = p=>p;
+    let flipper = p=>({
+      wx:-p.wx, wy:-p.wy, wz:-p.wz,
+      lx:p.lx, ly:p.ly,
+      dx:-p.dx, dy:-p.dy, dz:-p.dz
+    });
+    let flip = false;
     function intersect(os,ss){
       const res = [];
       os.forEach(o=>{
+        let fo = form(o);
         for(let i=0;i<ss.length;i++){
-          if(inPolygon(o,ss[i]))res.push(o);
+          if(inPolygon(fo,ss[i]))res.push(fo);
         }
       });
       return res;
@@ -564,49 +576,45 @@ window.addEventListener("load",_=>{
       }
       return pair;
     }
-    const sect1 = maxDistance(intersect(o1.outline,o2.polygon),o2.outline);
-    const sect2 = maxDistance(intersect(o2.outline,o1.polygon),o1.outline);
-    let sel = 0;
-    if(sect1 && sect2){
-      if(sect1.d < sect2.d)sel = 1;
-      else sel = 2;
-    }else if(sect1)sel = 1;
-    else if(sect2)sel = 2;
-    if(sel==0)return [];
+    function getContactPoint(){
+      form = flip ? flipper : identity;
+      const sect1 = maxDistance(intersect(o1.outline,o2.polygon),o2.outline);
+      const sect2 = maxDistance(intersect(o2.outline,o1.polygon),o1.outline);
+      let sel = 0;
+      if(sect1 && sect2){
+        if(sect1.d < sect2.d)sel = 1;
+        else sel = 2;
+      }else if(sect1)sel = 1;
+      else if(sect2)sel = 2;
+      if(sel==0)return [];
 
-    let p1, p2;
-    if(sel==1){
-      p1 = sect1.p1;
-      p2 = sect1.p2;
-    }else{
-      p1 = sect2.p2;
-      p2 = sect2.p1;
+      let p1, p2;
+      let flipped1 = false, flipped2 = false;
+      if(sel==1){
+        p1 = sect1.p1;
+        p2 = sect1.p2;
+        if(flip)flipped1 = true;
+      }else{
+        p1 = sect2.p2;
+        p2 = sect2.p1;
+        if(flip)flipped2 = true;
+      }
+      return [{
+        w1x:p1.wx, w1y:p1.wy, w1z:p1.wz,
+        w2x:p2.wx, w2y:p2.wy, w2z:p2.wz,
+        c1x:p1.lx, c1y:p1.ly,
+        c2x:p2.lx, c2y:p2.ly,
+        d1x:p1.dx, d1y:p1.dy, d1z:p1.dz,
+        d2x:p2.dx, d2y:p2.dy, d2z:p2.dz,
+        flipped1:flipped1, flipped2:flipped2
+      }];
     }
-    /*drawObject({
-      polygon:[[
-        {wx:p1.wx,wy:p1.wy,wz:p1.wz,r:1,a:1,t:0},
-        {wx:p2.wx,wy:p2.wy,wz:p2.wz,r:1,a:1,t:0},
-        {wx:0,wy:0,wz:0,r:1,a:1,t:0}
-      ]]
-    });*/
-    return [{
-      w1x:p1.wx,
-      w1y:p1.wy,
-      w1z:p1.wz,
-      w2x:p2.wx,
-      w2y:p2.wy,
-      w2z:p2.wz,
-      c1x:p1.lx,
-      c1y:p1.ly,
-      c2x:p2.lx,
-      c2y:p2.ly,
-      d1x:p1.dx,
-      d1y:p1.dy,
-      d1z:p1.dz,
-      d2x:p2.dx,
-      d2y:p2.dy,
-      d2z:p2.dz
-    }];
+    flip = false;
+    const cps1 = getContactPoint();
+    if(!projective)return cps1;
+    flip = true;
+    const cps2 = getContactPoint();
+    return [].concat(cps1,cps2);
   };
   passObject = (ix,o)=>{
     objects[ix] = o;
@@ -622,13 +630,14 @@ window.addEventListener("load",_=>{
       tverts[tIndex+5] = r;
       tIndex += 6;
     }
-    function drawTriangles(hue){
+    function drawTriangles(hue,projFactor){
       if(!tprogram)return;
       gl.useProgram(tprogram);
       gl.uniform3f(tcamLocation,camera[0],camera[1],camera[2]);
       gl.uniformMatrix3fv(ttransLocation,false,transformI);
       gl.uniform1f(tfovLocation,fov);
       gl.uniform1f(thueLocation,hue);
+      gl.uniform1f(tprojFactorLocation,projFactor);
       gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
       gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);
       gl.vertexAttribPointer(1,1,gl.FLOAT,false,24,12);
@@ -646,7 +655,8 @@ window.addEventListener("load",_=>{
           vertex(v.wx,v.wy,v.wz,v.r,v.a,v.t);
         });
       });
-      drawTriangles(hue);
+      drawTriangles(hue,1);
+      if(projective)drawTriangles(hue,-1);
       tIndex = 0;
     });
   };

@@ -20,9 +20,13 @@ import Data.Foldable hiding (length)
 import Data.Traversable
 import qualified Data.Array as A
 import qualified "mtl" Control.Monad.State as S
+import Haste.Foreign (constant)
 
 dt :: R
 dt = 0.01
+
+projective :: Bool
+projective = constant "projective"
 
 applyGravity :: Object -> Object
 applyGravity o = o & veloc.place +~ g * scale dt where
@@ -50,23 +54,27 @@ generateConstraints = do
       Just o1 <- preuse $ ix i1
       Just o2 <- preuse $ ix i2
       cs <- io $ collide o1 o2
-      return $ cs >>= \(ContactPoint w1 w2 l1 l2 d1 d2) -> let
+      return $ cs >>= \(ContactPoint w1 w2 l1 l2 d1 d2 f1 f2) -> let
           v = w2 - w1
           d = length v
           n = v * scale (1/d)
-          n1 = normal w1
-          n2 = normal w2
+          ln1 = normal w1
+          ln2 = normal w2
+          ff1 = if f1 then -1 else 1
+          ff2 = if f2 then -1 else 1
           r1 = scale (length l1) * normalize d1
           r2 = scale (length l2) * normalize d2
+          n1 = scale ff1 * n
+          n2 = scale ff2 * n
         in if i1 /= i2
           then let
-              j1 = Pos (n`perpTo`n1) (Rotate $ (cross n r1)`dot`n1)
-              j2 = Pos (n`perpTo`n2) (Rotate $ (cross n r2)`dot`n2)
+              j1 = Pos (n1`perpTo`ln1) (Rotate $ (cross n1 r1)`dot`ln1)
+              j2 = Pos (n2`perpTo`ln2) (Rotate $ (cross n2 r2)`dot`ln2)
               c = Constraint i1 i2 j1 j2 d True
             in [c]
           else let
-              j1 = Pos (n`cross`n1) (Rotate $ (cross (n`cross`n1) r1)`dot`n1)
-              j2 = Pos (n`cross`n2) (Rotate $ (cross (n`cross`n2) r2)`dot`n2)
+              j1 = Pos (n1`cross`ln1) (Rotate $ (cross (n1`cross`ln1) r1)`dot`ln1)
+              j2 = Pos (n2`cross`ln2) (Rotate $ (cross (n2`cross`ln2) r2)`dot`ln2)
               c1 = Constraint i1 i2 j1 0 d False
               c2 = Constraint i1 i2 0 j2 d False
             in [c1,c2]

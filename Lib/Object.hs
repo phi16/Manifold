@@ -133,12 +133,19 @@ instance V3 (Polygon a) (Vertex a) where
 instance ToAny (Polygon R) where
   toAny (Polygon x y z) = listToAny [x,y,z]
 
+-- Gravity
+
+newtype Gravity a = Gravity {unGravity :: World R -> World R}
+
+instance Show (Gravity a) where
+  show _ = "[Gravity]"
+
 -- Object
 
 data Object = Object {
   -- property
   _shape :: !Shape,
-  _gravity :: !(World R),
+  _gravity :: !(Gravity R),
   _massInv :: !(Pos R),
   -- state
   _coord :: !(Pos R),
@@ -152,8 +159,8 @@ data Object = Object {
 
 shape :: Lens' Object Shape
 shape = lens _shape $ \c v -> c {_shape = v}
-gravity :: Lens' Object (World R)
-gravity = lens _gravity $ \c v -> c {_gravity = v}
+gravity :: Lens' Object (World R -> World R)
+gravity = lens (unGravity._gravity) $ \c v -> c {_gravity = Gravity v}
 massInv :: Lens' Object (Pos R)
 massInv = lens _massInv $ \c v -> c {_massInv = v}
 
@@ -172,7 +179,7 @@ outline :: Lens' Object JSAny
 outline = lens _outline $ \c v -> c {_outline = v}
 
 static :: SimpleGetter Object Object
-static = to $ (gravity .~ 0) . (massInv .~ 0)
+static = to $ (gravity .~ const 0) . (massInv .~ 0)
 
 type ObjIx = Int
 type PhysWorld = A.Array ObjIx Object
@@ -197,7 +204,7 @@ make (Shape s) rho c v ra = let
     mass = integrate 1 * rho  -- 1 * J = r^1
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
-    g = World 0.4 0.4 0.4
+    g = Gravity $ \p -> World (-p^.x) (-p^.z) (p^.y)
   in fitO $ Object (Shape s) g mi c v ra 0 nullValue nullValue
 
 generatePolygon :: Object -> ([Polygon R], [Vertex R])
@@ -254,7 +261,7 @@ fitO o = let
         & outline .~ toAny l
 
 passObject :: Int -> Object -> IO ()
-passObject = ffi "passObject"
+passObject = ffi "__strict(passObject)"
 
 instance ToAny Object where
   toAny o = toObject [
@@ -263,4 +270,4 @@ instance ToAny Object where
     ]
 
 drawObjects :: IO ()
-drawObjects = ffi "drawObjects"
+drawObjects = ffi "__strict(drawObjects)"

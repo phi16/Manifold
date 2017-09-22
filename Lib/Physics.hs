@@ -30,7 +30,7 @@ projective = constant "projective"
 
 applyGravity :: Object -> Object
 applyGravity o = o & veloc.place +~ g * scale dt where
-  g = (o^.gravity) `perpTo` (o^.surface)
+  g = (o^.gravity) (o^.coord.place) `perpTo` (o^.surface)
 
 applyVelocity :: Object -> Object
 applyVelocity o = o & coord +~ o^.veloc * scale dt & fitO

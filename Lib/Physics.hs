@@ -4,8 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib.Physics (
-  nextFrame,
-  drawObject
+  nextFrame
 ) where
 
 import Prelude hiding (length)

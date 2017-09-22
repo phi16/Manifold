@@ -197,7 +197,7 @@ make (Shape s) rho c v ra = let
     mass = integrate 1 * rho  -- 1 * J = r^1
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
-    g = World 0 (-0.4) 0
+    g = World 0.4 0.4 0.4
   in fitO $ Object (Shape s) g mi c v ra 0 nullValue nullValue
 
 generatePolygon :: Object -> ([Polygon R], [Vertex R])
@@ -253,11 +253,14 @@ fitO o = let
         & polygon .~ toAny p
         & outline .~ toAny l
 
-drawObject :: Object -> IO ()
-drawObject = ffi "drawObject"
+passObject :: Int -> Object -> IO ()
+passObject = ffi "passObject"
 
 instance ToAny Object where
   toAny o = toObject [
       ("polygon", o^.polygon),
       ("outline", o^.outline)
     ]
+
+drawObjects :: IO ()
+drawObjects = ffi "drawObjects"

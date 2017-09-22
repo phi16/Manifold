@@ -24,26 +24,22 @@ initial :: IO State
 initial = do
   let
     ra = World 0 0 1
-    p1 = World (0.2) (-0.2) (0.2) -- torus
+    p1 = World 0.4 0.4 0.4
     p2 = World 1.3 0 0
-    v1 = World 0 0 0
-    v2 = World 0 (-0.1) 0.3
-    -- p1 = World 0 0.5 (-0.5) -- sphere
-    -- p2 = World 0.4 0 0
-    -- v1 = World 0 0 0.3
-    -- v2 = World 0 (-0.1) 0.3
-    -- p1 = World 0 0 2 -- plane
-    -- p2 = World (0.1) 0 0
-    -- v1 = World 0 0 0
-    -- v2 = World 0 0 0
-    o1 = make (circle 0.4) 1.2 (Pos p1 0) (Pos v1 (-2)) ra
-    o2 = make (square 0.2) 1.2 (Pos p2 0) (Pos v2 4) ra
-    ls = [o1,o2]
+    p3 = World 1 1 0
+    p4 = World 0 1 1
+    o1 = make (circle 0.4) 1.2 (Pos p1 0) 0 ra
+    o2 = make (circle 0.4) 1.2 (Pos p2 0) 0 ra
+    o3 = make (circle 0.4) 1.2 (Pos p3 0) 0 ra
+    o4 = make (circle 0.4) 1.2 (Pos p4 0) 0 ra
+    ls = [o1,o2,o3,o4]
   return $ listArray (0,length ls-1) ls
 
 step :: State -> IO State
 step w = do
   refresh
   draw
-  for w drawObject
+  let (s,f) = bounds w
+  for [s..f] $ \i -> passObject i $ w^?!ix i
+  drawObjects
   S.execStateT nextFrame w

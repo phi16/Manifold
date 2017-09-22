@@ -102,7 +102,8 @@ data Constraint = Constraint {
   _index2 :: !Int,
   _J1 :: !(Pos R),
   _J2 :: !(Pos R),
-  _depth :: R
+  _depth :: R,
+  _positiveClamp :: Bool
 } deriving Show
 
 index1 :: Lens' Constraint Int
@@ -115,6 +116,8 @@ j2 :: Lens' Constraint (Pos R)
 j2 = lens _J2 $ \c v -> c {_J2 = v}
 depth :: Lens' Constraint R
 depth = lens _depth $ \c v -> c {_depth = v}
+positiveClamp :: Lens' Constraint Bool
+positiveClamp = lens _positiveClamp $ \c v -> c {_positiveClamp = v}
 
 jv :: Constraint -> Pos R -> Pos R -> R
 jv c v1 v2 = dot v1 (c^.j1) - dot v2 (c^.j2)

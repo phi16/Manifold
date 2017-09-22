@@ -183,7 +183,7 @@ window.addEventListener("load",_=>{
       vec2 texCoord = screen.xy / screen.z * 0.5 + 0.5;
       float depth = texture2D(worldTex,texCoord).w;
       float surfaceDepth = length(coord - camera);
-      if(depth < surfaceDepth - 0.2)discard;
+      if(depth < surfaceDepth - 0.1)discard;
       vec3 color = coord * 0.5 + 0.5;
       float factor = 1.;
       if(length(borderCoord) > 0.9) factor = 0.5;
@@ -198,8 +198,8 @@ window.addEventListener("load",_=>{
   let tcamLocation, ttransLocation, tfovLocation;
   let bgworldTexLocation, tworldTexLocation;
 
-  let camera = [0,4,-4];
-  let adir = 0.8;
+  let camera = [0,-5,-5];
+  let adir = -0.6;
   let transform = [1,0,0,0,Math.cos(adir),Math.sin(adir),0,-Math.sin(adir),Math.cos(adir)];
   let transformI = [1,0,0,0,Math.cos(adir),-Math.sin(adir),0,Math.sin(adir),Math.cos(adir)];
   let fov = 30/2;

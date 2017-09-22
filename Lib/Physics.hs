@@ -23,7 +23,7 @@ import qualified Data.Array as A
 import qualified "mtl" Control.Monad.State as S
 
 dt :: R
-dt = 0.05
+dt = 0.01
 
 applyGravity :: Object -> Object
 applyGravity o = o & veloc.place +~ g * scale dt where
@@ -51,8 +51,7 @@ generateConstraints = do
       Just o1 <- preuse $ ix i1
       Just o2 <- preuse $ ix i2
       cs <- io $ collide o1 o2
-      for cs $ \(ContactPoint w1 w2 l1 l2 d1 d2) -> do
-        let
+      return $ cs >>= \(ContactPoint w1 w2 l1 l2 d1 d2) -> let
           v = w2 - w1
           d = length v
           n = v * scale (1/d)
@@ -60,9 +59,18 @@ generateConstraints = do
           n2 = normal w2
           r1 = scale (length l1) * normalize d1
           r2 = scale (length l2) * normalize d2
-          j1 = Pos (n`perpTo`n1) (Rotate $ (cross n r1)^.y)
-          j2 = Pos (n`perpTo`n2) (Rotate $ (cross n r2)^.y)
-        return $ Constraint i1 i2 j1 j2 d
+        in if i1 /= i2
+          then let
+              j1 = Pos (n`perpTo`n1) (Rotate $ (cross n r1)`dot`n1)
+              j2 = Pos (n`perpTo`n2) (Rotate $ (cross n r2)`dot`n2)
+              c = Constraint i1 i2 j1 j2 d True
+            in [c]
+          else let
+              j1 = Pos (n`cross`n1) (Rotate $ (cross (n`cross`n1) r1)`dot`n1)
+              j2 = Pos (n`cross`n2) (Rotate $ (cross (n`cross`n2) r2)`dot`n2)
+              c1 = Constraint i1 i2 j1 0 d False
+              c2 = Constraint i1 i2 0 j2 d False
+            in [c1,c2]
 
 solveConstraints :: [Constraint] -> S.StateT PhysWorld IO ()
 solveConstraints cs = replicateM_ 5 $ for cs $ \c -> do
@@ -74,7 +82,8 @@ solveConstraints cs = replicateM_ 5 $ for cs $ \c -> do
     measure (Pos (World x y z) (Rotate a)) = x + y + z + a
     jmjt = measure (c^.j1 * d1^.massInv * c^.j1) + measure (c^.j2 * d2^.massInv * c^.j2)
     ldt = - (jvt - bias) / jmjt
-  when (jmjt /= 0 && ldt >= 0) $ do
+    valid = not (c^.positiveClamp) || ldt >= 0
+  when (jmjt /= 0 && valid) $ do
     let sameScale = if c^.index1 == c^.index2 then 0.6 else 1
     ix (c^.index1).veloc += d1^.massInv * c^.j1 * scale (ldt * sameScale)
     ix (c^.index2).veloc -= d2^.massInv * c^.j2 * scale (ldt * sameScale)

@@ -66,6 +66,15 @@ distance p = field p / norm (gradient p)
 normal :: Field a => World a -> World a
 normal p = normalize $ gradient p
 
+boundary :: Field a => World a -> a
+boundary p = sqrt ((p^.x)^2 + (p^.z)^2) - 1
+
+boundGradient :: Field a => World a -> World a
+boundGradient = grad boundary
+
+boundDistance :: Field a => World a -> a
+boundDistance p = boundary p / norm (boundGradient p)
+
 perpTo :: Field a => World a -> World a -> World a
 perpTo v n = v - n * scale (dot n v)
 

@@ -46,12 +46,15 @@ nextFrame = do
 collide :: Object -> Object -> IO [ContactPoint]
 collide = ffi "collide"
 
+collideBound :: Object -> IO [ContactPoint]
+collideBound = ffi "collideBound"
+
 generateConstraints :: S.StateT PhysWorld IO [Constraint]
 generateConstraints = do
   (s,f) <- use $ to A.bounds
   fmap concat $ for [s..f] $ \i1 -> do
-    fmap concat $ for [i1..f] $ \i2 -> do
-      Just o1 <- preuse $ ix i1
+    Just o1 <- preuse $ ix i1
+    colls <- for [i1..f] $ \i2 -> do
       Just o2 <- preuse $ ix i2
       cs <- io $ collide o1 o2
       return $ cs >>= \(ContactPoint w1 w2 l1 l2 d1 d2 f1 f2) -> let
@@ -78,6 +81,19 @@ generateConstraints = do
               c1 = Constraint i1 i2 j1 0 d False
               c2 = Constraint i1 i2 0 j2 d False
             in [c1,c2]
+    boundColls <- do
+      cs <- io $ collideBound o1
+      return $ cs >>= \(ContactPoint w1 w2 l1 _ d1 _ _ _) -> let
+          v = w2 - w1
+          d = length v
+          n = v * scale (1/d)
+          ln1 = normal w1
+          r1 = scale (length l1) * normalize d1
+          n1 = n
+          j1 = Pos (n1`perpTo`ln1) (Rotate $ (cross n1 r1)`dot`ln1)
+          c = Constraint i1 i1 j1 0 d True
+        in [c]
+    return $ boundColls ++ concat colls
 
 solveConstraints :: [Constraint] -> S.StateT PhysWorld IO ()
 solveConstraints cs = replicateM_ 5 $ for cs $ \c -> do

@@ -5,10 +5,15 @@ const projective = false;
 let scrW = 0, scrH = 0;
 let refresh = _=>_;
 let compile = _=>_;
+let setBounds = _=>_;
 let draw = _=>_;
 let collide = _=>_;
+let collideBound = _=>_;
 let drawObject = _=>_;
 let passObject = _=>_;
+
+let boundary = _=>_;
+let boundGradient = _=>_;
 
 function polygonNormal(a,b,c){
   const d1x = c.wx-a.wx;
@@ -166,7 +171,7 @@ window.addEventListener("load",_=>{
       gl_Position = vec4(position,0.,1.);
     }
   `;
-  const fsSource = (f,g)=>`
+  const fsSource = (f,g,b)=>`
     precision mediump float;
     const float pi = 3.1415926535;
     varying vec2 coord;
@@ -179,7 +184,7 @@ window.addEventListener("load",_=>{
       float x = p.x;
       float y = p.y;
       float z = p.z;
-      return ` + f + `;
+      return max(` + f + `, ` + b + `);
     }
     vec3 gradient(vec3 p){
       float x = p.x;
@@ -395,7 +400,7 @@ window.addEventListener("load",_=>{
   refresh = _=>{
     gl.clear(gl.COLOR_BUFFER_BIT);
   };
-  compile = (field,grad)=>{
+  compile = (field,grad,bound)=>{
     function makeShader(type,source){
       const s = gl.createShader(type);
       gl.shaderSource(s,source);
@@ -419,7 +424,7 @@ window.addEventListener("load",_=>{
     }
     // Field rendering (to framebuffer)
     const vs = makeShader(gl.VERTEX_SHADER,vsSource);
-    const fs = makeShader(gl.FRAGMENT_SHADER,fsSource(field,grad));
+    const fs = makeShader(gl.FRAGMENT_SHADER,fsSource(field,grad,bound));
     if(!vs || !fs)return;
     program = makeProgram(vs,fs);
     if(!program)return;
@@ -481,6 +486,20 @@ window.addEventListener("load",_=>{
     gl.enableVertexAttribArray(1);
     gl.enableVertexAttribArray(2);
     gl.enableVertexAttribArray(3);
+  };
+  setBounds = (b,g)=>{
+    boundary = p=>{
+      let x = p.wx;
+      let y = p.wy;
+      let z = p.wz;
+      return eval(b);
+    };
+    boundGradient = p=>{
+      let x = p.wx;
+      let y = p.wy;
+      let z = p.wz;
+      return eval(g);
+    };
   };
   function matMult(a,b){
     let c = [];
@@ -615,6 +634,33 @@ window.addEventListener("load",_=>{
     flip = true;
     const cps2 = getContactPoint();
     return [].concat(cps1,cps2);
+  };
+  collideBound = (o1)=>{
+    const res = [];
+    o1.outline.forEach(o=>{
+      let bdf = boundary(o);
+      let bdn = boundGradient(o);
+      let bd = bdf / Math.sqrt(bdn.x*bdn.x+bdn.y*bdn.y+bdn.z*bdn.z);
+      if(bd >= 0){
+        let p1 = o;
+        let p2 = {
+          wx: o.wx - bdn.x * bd,
+          wy: o.wy - bdn.y * bd,
+          wz: o.wz - bdn.z * bd,
+          lx: 0, ly: 0, dx: 1, dy: 0, dz: 0
+        };
+        res.push({
+          w1x:p1.wx, w1y:p1.wy, w1z:p1.wz,
+          w2x:p2.wx, w2y:p2.wy, w2z:p2.wz,
+          c1x:p1.lx, c1y:p1.ly,
+          c2x:p2.lx, c2y:p2.ly,
+          d1x:p1.dx, d1y:p1.dy, d1z:p1.dz,
+          d2x:p2.dx, d2y:p2.dy, d2z:p2.dz,
+          flipped1:false, flipped2:false
+        });
+      }
+    });
+    return res;
   };
   passObject = (ix,o)=>{
     objects[ix] = o;

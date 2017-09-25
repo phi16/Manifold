@@ -22,8 +22,10 @@ vertex :: R -> R -> R -> R -> R -> R -> IO ()
 vertex = ffi "__strict(vertex)"
 drawTriangles :: IO ()
 drawTriangles = ffi "__strict(drawTriangles)"
-compile :: JSString -> JSString -> IO ()
+compile :: JSString -> JSString -> JSString -> IO ()
 compile = ffi "__strict(compile)"
+setBounds :: JSString -> JSString -> IO ()
+setBounds = ffi "__strict(setBounds)"
 
 frameStep :: CIO ()
 frameStep = do

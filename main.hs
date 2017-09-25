@@ -5,6 +5,7 @@ module Main where
 import Lib.Util hiding (length)
 import Lib.Screen
 import Lib.Shader
+import Lib.JS
 import Lib.World
 import Lib.Object
 import Lib.Physics
@@ -14,7 +15,8 @@ import Data.Array
 
 main :: IO ()
 main = do
-  compile fieldStr gradStr
+  compile fieldStr gradStr boundStr
+  setBounds boundJSStr boundGradJSStr
   i <- initial
   run i step
 

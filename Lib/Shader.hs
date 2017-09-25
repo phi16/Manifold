@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveFoldable #-}
 
-module Lib.Shader (fieldStr, gradStr) where
+module Lib.Shader (fieldStr, gradStr, boundStr) where
 
 import Lib.Util
 import Lib.World
@@ -75,3 +75,6 @@ gradStr = toJSStr $ let
     g = gradient argument
     gs = C $ intersperse "," $ toList g
   in fold $ C $ ["vec3(",gs,")"]
+
+boundStr :: JSString
+boundStr = toJSStr $ fold $ boundary argument

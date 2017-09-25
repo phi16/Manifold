@@ -44,7 +44,7 @@ instance V3 (World a) a where
   z = lens (\(World _ _ z) -> z) $ \(World x y _) z -> World x y z
 
 field :: Field a => World a -> a
-field p = p^.y -- Plane
+-- field p = p^.y -- Plane
 -- field p = length p - 1 -- Sphere
 {- field (World x y z) = let -- Torus
     qx = sqrt (x^2+z^2) - 0.8
@@ -53,9 +53,9 @@ field p = p^.y -- Plane
 {- field p = let -- Cube
     d = abs p - pure 0.6
   in min 0 ((d^.x)`max`(d^.y)`max`(d^.z)) + length (World (max (d^.x) 0) (max (d^.y) 0) (max (d^.z) 0)) - 0.3 -}
-{- field (World x y z) = let -- Pseudo-sphere
+field (World x y z) = let -- Pseudo-sphere
     d = sqrt (x^2+z^2)
-  in d - exp y -}
+  in d - exp y
 
 gradient :: Field a => World a -> World a
 gradient = grad field
@@ -71,9 +71,6 @@ boundary p = sqrt ((p^.x)^2 + (p^.z)^2) - 1
 
 boundGradient :: Field a => World a -> World a
 boundGradient = grad boundary
-
-boundDistance :: Field a => World a -> a
-boundDistance p = boundary p / norm (boundGradient p)
 
 perpTo :: Field a => World a -> World a -> World a
 perpTo v n = v - n * scale (dot n v)

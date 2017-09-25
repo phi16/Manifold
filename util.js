@@ -324,8 +324,8 @@ window.addEventListener("load",_=>{
   let tcamLocation, ttransLocation, tfovLocation, thueLocation, tprojFactorLocation;
   let bgworldTexLocation, tworldTexLocation;
 
-  let origin = [0,0,0];
-  let adir = 0.8, rdir = 0, cameraDist = 6;
+  let origin = [0,-2,0];
+  let adir = -0.6, rdir = 0, cameraDist = 6;
   let adirTo = adir, rdirTo = rdir;
   let camera = [0,0,0];
   let transform = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
@@ -640,7 +640,9 @@ window.addEventListener("load",_=>{
     o1.outline.forEach(o=>{
       let bdf = boundary(o);
       let bdn = boundGradient(o);
-      let bd = bdf / Math.sqrt(bdn.x*bdn.x+bdn.y*bdn.y+bdn.z*bdn.z);
+      let bdl = Math.sqrt(bdn.x*bdn.x+bdn.y*bdn.y+bdn.z*bdn.z);
+      if(bdl < 0.001)return;
+      let bd = bdf / bdl;
       if(bd >= 0){
         let p1 = o;
         let p2 = {

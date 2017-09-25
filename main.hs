@@ -23,13 +23,13 @@ type State = PhysWorld
 initial :: IO State
 initial = do
   let
-    ra = World 0 1 0
+    ra = World 1 1 1
     p1 = World 0 0 1
     p2 = World 1 0 1
     p3 = World 1 1 0
-    p4 = World 0 1 1
+    p4 = World 2 1 1
     p5 = World 0 1 0.5
-    o1 = make (square 0.2) 1.2 (Pos p1 (Rotate $ pi/4)) 0 ra ^. static
+    o1 = make (square 0.2) 1.2 (Pos p1 0) 0 ra
     o2 = make (circle 0.3) 1.2 (Pos p2 0) 0 ra
     o3 = make (circle 0.3) 1.2 (Pos p3 0) 0 ra
     o4 = make (square 0.3) 1.2 (Pos p4 0) 0 ra

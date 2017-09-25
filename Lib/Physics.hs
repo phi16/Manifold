@@ -44,10 +44,13 @@ nextFrame = do
   return ()
 
 collide :: Object -> Object -> IO [ContactPoint]
-collide = ffi "collide"
+collide = ffi "__strict(collide)"
 
 collideBound :: Object -> IO [ContactPoint]
-collideBound = ffi "collideBound"
+collideBound = ffi "__strict(collideBound)"
+
+mouseContact :: Int -> IO [ContactPoint]
+mouseContact = ffi "__strict(mouseContact)"
 
 generateConstraints :: S.StateT PhysWorld IO [Constraint]
 generateConstraints = do
@@ -93,7 +96,21 @@ generateConstraints = do
           j1 = Pos (n1`perpTo`ln1) (Rotate $ (cross n1 r1)`dot`ln1)
           c = Constraint i1 i1 j1 0 d True
         in [c]
-    return $ boundColls ++ concat colls
+    mouseCon <- do
+      cs <- io $ mouseContact i1
+      return $ cs >>= \(ContactPoint _ w2 _ _ _ _ f1 _) -> let
+          w1 = o1^.coord.place
+          v = w2 - w1
+          d = length v
+          n = v * scale (1/d)
+          ln1 = normal w1
+          r1 = 0
+          ff1 = if f1 then -1 else 1
+          n1 = scale ff1 * n
+          j1 = Pos (n1`perpTo`ln1) (Rotate $ (cross n1 r1)`dot`ln1)
+          c = Constraint i1 i1 j1 0 d True
+        in [c]
+    return $ mouseCon ++ boundColls ++ concat colls
 
 solveConstraints :: [Constraint] -> S.StateT PhysWorld IO ()
 solveConstraints cs = replicateM_ 5 $ for cs $ \c -> do

@@ -31,12 +31,12 @@ initial = do
     p3 = World 1 1 0
     p4 = World 2 1 1
     p5 = World 0 1 0.5
-    o1 = make (square 0.2) 1.2 (Pos p1 0) 0 ra
+    o1 = make (square 0.2) 1.2 (Pos p1 0) 0 ra ^. static
     o2 = make (circle 0.3) 1.2 (Pos p2 0) 0 ra
     o3 = make (circle 0.3) 1.2 (Pos p3 0) 0 ra
     o4 = make (square 0.3) 1.2 (Pos p4 0) 0 ra
     o5 = make (circle 0.3) 1.2 (Pos p5 0) 0 ra
-    ls = [o1,o2,o3,o4]
+    ls = [o1,o2,o3,o4,o5]
   return $ listArray (0,length ls-1) ls
 
 step :: State -> IO State

@@ -1,6 +1,6 @@
 const angleCount = 24;
 const proceedCount = 4;
-const projective = false;
+const projective = true;
 
 let scrW = 0, scrH = 0;
 let refresh = _=>_;
@@ -9,6 +9,7 @@ let setBounds = _=>_;
 let draw = _=>_;
 let collide = _=>_;
 let collideBound = _=>_;
+let mouseContact = _=>_;
 let drawObject = _=>_;
 let passObject = _=>_;
 
@@ -324,18 +325,18 @@ window.addEventListener("load",_=>{
   let tcamLocation, ttransLocation, tfovLocation, thueLocation, tprojFactorLocation;
   let bgworldTexLocation, tworldTexLocation;
 
-  let origin = [0,-2,0];
-  let adir = -0.6, rdir = 0, cameraDist = 6;
+  let origin = [0,0,0];
+  let adir = 0.8, rdir = 0, cameraDist = 6;
   let adirTo = adir, rdirTo = rdir;
   let camera = [0,0,0];
-  let transform = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-  let transformI = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+  let transform = [1,0,0,0,1,0,0,0,1];
+  let transformI = [1,0,0,0,1,0,0,0,1];
   let fov = 30/2;
 
   let fieldMap = new Float32Array(4 * scrW * scrH);
   let objects = {};
 
-  let grabWorld = false, grabObject = null;
+  let grabWorld = false, grabObject = null, grabFlipped = false;
   let prevMouseX = null, prevMouseY;
   cvs.addEventListener("mousedown",e=>{
     prevMouseX = e.offsetX;
@@ -351,6 +352,7 @@ window.addEventListener("load",_=>{
     if(d != -1){
       // collide to the world
       const m = {wx:x,wy:y,wz:z,lx:100,ly:100};
+      const mf = {wx:-x,wy:-y,wz:-z,lx:100,ly:100};
       const a = Object.keys(objects);
       let collide = null;
       for(let i=0;i<a.length;i++){
@@ -360,9 +362,21 @@ window.addEventListener("load",_=>{
           const p = o.polygon[j];
           if(inPolygon(m,p)){
             collide = {
-              ix:parseInt(ix)
+              ix:parseInt(ix),
+              wx:x,wy:y,wz:z,
+              flip:false
             };
             break;
+          }
+          if(projective){
+            if(inPolygon(mf,p)){
+              collide = {
+                ix:parseInt(ix),
+                wx:x,wy:y,wz:z,
+                flip:true
+              };
+              break;
+            }
           }
         }
         if(collide)break;
@@ -378,19 +392,31 @@ window.addEventListener("load",_=>{
     }
   });
   cvs.addEventListener("mousemove",e=>{
+    let dx = e.offsetX - prevMouseX;
+    let dy = e.offsetY - prevMouseY;
     if(grabWorld){
-      let dx = e.offsetX - prevMouseX;
-      let dy = e.offsetY - prevMouseY;
       rdirTo -= dx/80;
       adirTo += dy/80;
       if(adirTo < -Math.PI/2)adirTo = -Math.PI/2;
       if(adirTo >  Math.PI/2)adirTo =  Math.PI/2;
-      prevMouseX = e.offsetX;
-      prevMouseY = e.offsetY;
     }
     if(grabObject){
-      // TODO : apply force
+      gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
+      gl.readPixels(0,0,scrW,scrH,gl.RGBA,gl.FLOAT,fieldMap,0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      const vp = e.offsetX + (scrH - e.offsetY - 1) * scrW;
+      const x = fieldMap[vp*4+0];
+      const y = fieldMap[vp*4+1];
+      const z = fieldMap[vp*4+2];
+      const d = fieldMap[vp*4+3];
+      if(d != -1){
+        grabObject.wx = x;
+        grabObject.wy = y;
+        grabObject.wz = z;
+      }
     }
+    prevMouseX = e.offsetX;
+    prevMouseY = e.offsetY;
   });
   cvs.addEventListener("mouseup",e=>{
     grabWorld = false;
@@ -663,6 +689,22 @@ window.addEventListener("load",_=>{
       }
     });
     return res;
+  };
+  mouseContact = (i)=>{
+    if(!grabObject)return [];
+    if(grabObject.ix != i)return [];
+    let f = grabObject.flip ? -1 : 1;
+    let x = grabObject.wx * f;
+    let y = grabObject.wy * f;
+    let z = grabObject.wz * f;
+    return [{
+      w1x:0, w1y:0, w1z:0,
+      w2x:x, w2y:y, w2z:z,
+      c1x:0, c1y:0, c2x:0, c2y:0,
+      d1x:0, d1y:0, d1z:0,
+      d2x:0, d2y:0, d2z:0,
+      flipped1:false, flipped2:false
+    }];
   };
   passObject = (ix,o)=>{
     objects[ix] = o;

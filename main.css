@@ -26,6 +26,7 @@ img {
   box-shadow: rgb(0,0,0) 0 0 3px;
   width: 200px;
   height: 200px;
+  padding: 9px;
 }
 iframe {
   width: 800px;

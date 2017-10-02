@@ -17,7 +17,7 @@ window.addEventListener("load",_=>{
   function addContent(target,list){
     list.forEach(l=>{
       const img = document.createElement("img");
-      img.src="/" + l.path + "/thumb.png";
+      img.src="/" + l.path + "/" + l.path + ".png";
       img.addEventListener("click",_=>{
         frame.src = "/" + l.path + "/index.html";
         name.textContent = l.name;

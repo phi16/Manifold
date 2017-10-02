@@ -45,11 +45,11 @@ instance V3 (World a) a where
 
 field :: Field a => World a -> a
 -- field p = p^.y -- Plane
-field p = length p - 1 -- Sphere
-{- field (World x y z) = let -- Torus
+-- field p = length p - 1 -- Sphere
+field (World x y z) = let -- Torus
     qx = sqrt (x^2+z^2) - 0.8
     qy = y
-  in sqrt (qx^2 + qy^2) - 0.5 -}
+  in sqrt (qx^2 + qy^2) - 0.5
 {- field p = let -- Cube
     d = abs p - pure 0.6
   in min 0 ((d^.x)`max`(d^.y)`max`(d^.z)) + length (World (max (d^.x) 0) (max (d^.y) 0) (max (d^.z) 0)) - 0.3 -}
@@ -67,7 +67,7 @@ normal :: Field a => World a -> World a
 normal p = normalize $ gradient p
 
 boundary :: Field a => World a -> a
-boundary p = -p^.y -- sqrt ((p^.x)^2 + (p^.z)^2) - 1
+boundary p = -1 -- sqrt ((p^.x)^2 + (p^.z)^2) - 1
 
 boundGradient :: Field a => World a -> World a
 boundGradient = grad boundary

@@ -44,8 +44,8 @@ instance V3 (World a) a where
   z = lens (\(World _ _ z) -> z) $ \(World x y _) z -> World x y z
 
 field :: Field a => World a -> a
--- field p = p^.y -- Plane
-field p = length p - 1 -- Sphere
+field p = p^.y -- Plane
+-- field p = length p - 1 -- Sphere
 {- field (World x y z) = let -- Torus
     qx = sqrt (x^2+z^2) - 0.8
     qy = y
@@ -67,7 +67,7 @@ normal :: Field a => World a -> World a
 normal p = normalize $ gradient p
 
 boundary :: Field a => World a -> a
-boundary p = -1 -- sqrt ((p^.x)^2 + (p^.z)^2) - 1
+boundary p = max (abs $ p^.x) (abs $ p^.z) - 1-- sqrt ((p^.x)^2 + (p^.z)^2) - 1
 
 boundGradient :: Field a => World a -> World a
 boundGradient = grad boundary

@@ -1,6 +1,6 @@
 const angleCount = 24;
 const proceedCount = 4;
-const projective = true;
+const projective = false;
 
 let scrW = 0, scrH = 0;
 let refresh = _=>_;
@@ -326,7 +326,7 @@ window.addEventListener("load",_=>{
   let bgworldTexLocation, tworldTexLocation;
 
   let origin = [0,0,0];
-  let adir = 0.8, rdir = 0, cameraDist = 6;
+  let adir = Math.PI/2, rdir = 0, cameraDist = 4;
   let adirTo = adir, rdirTo = rdir;
   let camera = [0,0,0];
   let transform = [1,0,0,0,1,0,0,0,1];

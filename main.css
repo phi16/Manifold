@@ -1,0 +1,33 @@
+#container {
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+#left, #right {
+  display: flex;
+  flex-direction: column;
+}
+#main {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+#name {
+  font-family: 'Consolas', monospace;
+  font-size: 30px;
+  margin-top: 20px;
+}
+img {
+  box-shadow: rgb(0,0,0) 0 0 3px;
+  width: 200px;
+  height: 200px;
+}
+iframe {
+  width: 800px;
+  height: 600px;
+}

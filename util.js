@@ -325,13 +325,13 @@ window.addEventListener("load",_=>{
   let tcamLocation, ttransLocation, tfovLocation, thueLocation, tprojFactorLocation;
   let bgworldTexLocation, tworldTexLocation;
 
-  let origin = [0,0,0];
-  let adir = 0.8, rdir = 0, cameraDist = 6;
+  let origin = [0,-2,0];
+  let adir = -0.6, rdir = 0, cameraDist = 6;
   let adirTo = adir, rdirTo = rdir;
   let camera = [0,0,0];
   let transform = [1,0,0,0,1,0,0,0,1];
   let transformI = [1,0,0,0,1,0,0,0,1];
-  let fov = 26/2;
+  let fov = 30/2;
 
   let fieldMap = new Float32Array(4 * scrW * scrH);
   let objects = {};

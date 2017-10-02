@@ -154,7 +154,8 @@ data Object = Object {
   -- cache
   _surface :: !(World R),
   _polygon :: !JSAny, -- [Polygon R],
-  _outline :: !JSAny -- [Vertex R]
+  _outline :: !JSAny, -- [Vertex R],
+  _enclose :: !R
 } deriving Show
 
 shape :: Lens' Object Shape
@@ -177,6 +178,8 @@ polygon :: Lens' Object JSAny
 polygon = lens _polygon $ \c v -> c {_polygon = v}
 outline :: Lens' Object JSAny
 outline = lens _outline $ \c v -> c {_outline = v}
+enclose :: Lens' Object R
+enclose = lens _enclose $ \c v -> c {_enclose = v}
 
 static :: SimpleGetter Object Object
 static = to $ (gravity .~ const 0) . (massInv .~ 0)
@@ -205,9 +208,9 @@ make (Shape s) rho c v ra = let
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
     g = Gravity $ \p -> World (p^.z) (-p^.y) (-p^.x)
-  in fitO $ Object (Shape s) g mi c v ra 0 nullValue nullValue
+  in fitO $ Object (Shape s) g mi c v ra 0 nullValue nullValue 0
 
-generatePolygon :: Object -> ([Polygon R], [Vertex R])
+generatePolygon :: Object -> ([Polygon R], [Vertex R], R)
 generatePolygon o = S.evalState ?? o $ do
   Pos c (Rotate r) <- use coord
   Shape sf <- use shape
@@ -242,7 +245,8 @@ generatePolygon o = S.evalState ?? o $ do
       in Polygon cv (head xs) (head ys) : concat rects
     ps = concat $ zipWith comp vss (tail $ vss ++ [head vss])
     ls = map (\(_,vs) -> last vs) vss
-  return (ps, ls)
+    enc = maximum $ map (sf . (*(2*pi/aC))) $ [0..aC-1]
+  return (ps, ls, enc)
 
 fitO :: Object -> Object
 fitO o = let
@@ -255,18 +259,23 @@ fitO o = let
     & rotAxis .~ ra
     & surface .~ n
     & \o -> let
-        (p,l) = generatePolygon o
+        (p,l,e) = generatePolygon o
       in o
         & polygon .~ toAny p
         & outline .~ toAny l
+        & enclose .~ e
 
 passObject :: Int -> Object -> IO ()
 passObject = ffi "__strict(passObject)"
 
 instance ToAny Object where
   toAny o = toObject [
+      ("x", toAny $ o^.coord.place.x),
+      ("y", toAny $ o^.coord.place.y),
+      ("z", toAny $ o^.coord.place.z),
       ("polygon", o^.polygon),
-      ("outline", o^.outline)
+      ("outline", o^.outline),
+      ("enclose", toAny $ o^.enclose)
     ]
 
 drawObjects :: IO ()

@@ -1,6 +1,6 @@
 const angleCount = 24;
 const proceedCount = 4;
-const projective = false;
+const projective = true;
 
 let scrW = 0, scrH = 0;
 let refresh = _=>_;

@@ -123,7 +123,6 @@ function inPolygon(o,s){
 }
 
 window.addEventListener("load",_=>{
-  const container = document.getElementById("container");
   const cvs = document.getElementById("canvas");
   scrW = cvs.width;
   scrH = cvs.height;
@@ -595,6 +594,7 @@ window.addEventListener("load",_=>{
       return res;
     }
     function maxDistance(vs,os){
+      if(vs.length == 0)return null;
       let shortest = 0;
       let pair = null;
       for(let i=0;i<os.length;i++){
@@ -624,6 +624,11 @@ window.addEventListener("load",_=>{
     }
     function getContactPoint(){
       form = flip ? flipper : identity;
+      const ddx = flip ? - o1.x - o2.x : o1.x - o2.x;
+      const ddy = flip ? - o1.y - o2.y : o1.y - o2.y;
+      const ddz = flip ? - o1.z - o2.z : o1.z - o2.z;
+      const ddr = o1.enclose + o2.enclose;
+      if(ddx*ddx+ddy*ddy+ddz*ddz >= ddr*ddr)return [];
       const sect1 = maxDistance(intersect(o1.outline,o2.polygon),o2.outline);
       const sect2 = maxDistance(intersect(o2.outline,o1.polygon),o1.outline);
       let sel = 0;

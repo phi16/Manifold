@@ -1,6 +1,6 @@
 const angleCount = 24;
 const proceedCount = 4;
-const projective = true;
+const projective = false;
 
 let scrW = 0, scrH = 0;
 let refresh = _=>_;
@@ -331,7 +331,7 @@ window.addEventListener("load",_=>{
   let camera = [0,0,0];
   let transform = [1,0,0,0,1,0,0,0,1];
   let transformI = [1,0,0,0,1,0,0,0,1];
-  let fov = 30/2;
+  let fov = 20/2;
 
   let fieldMap = new Float32Array(4 * scrW * scrH);
   let objects = {};

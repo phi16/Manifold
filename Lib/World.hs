@@ -67,7 +67,7 @@ normal :: Field a => World a -> World a
 normal p = normalize $ gradient p
 
 boundary :: Field a => World a -> a
-boundary p = max (abs $ p^.x) (abs $ p^.z) - 1-- sqrt ((p^.x)^2 + (p^.z)^2) - 1
+boundary p = sqrt ((p^.x)^2 + (p^.z)^2) - 1
 
 boundGradient :: Field a => World a -> World a
 boundGradient = grad boundary

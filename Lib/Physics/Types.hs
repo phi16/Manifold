@@ -117,7 +117,7 @@ circle x y r rho = let
     i = 1/2*pi*r^4*rho
     g = Coord 0 1 0
     mi = Coord (1/m) (1/m) (1/i)
-  in Object s (Coord x y 0) 0 g mi
+  in Object s (Coord x y (pi/2)) 0 g mi
 
 rect :: R -> R -> R -> R -> Density -> Object
 rect x y w h rho = let
@@ -126,7 +126,7 @@ rect x y w h rho = let
     i = 1/12*(w*h^3+h*w^3)*rho
     g = Coord 0 1 0
     mi = Coord (1/m) (1/m) (1/i)
-  in Object s (Coord x y 0) 0 g mi
+  in Object s (Coord x y (pi/2)) 0 g mi
 
 type ObjIx = Int
 type World = A.Array ObjIx Object

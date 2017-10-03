@@ -124,7 +124,7 @@ function inPolygon(o,s){
 
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
-  scrW = cvs.width;
+  scrW = cvs.width / 2;
   scrH = cvs.height;
 
   const gl = cvs.getContext("webgl");
@@ -136,8 +136,8 @@ window.addEventListener("load",_=>{
   gl.disable(gl.BLEND);
   gl.disable(gl.DEPTH_TEST);
   gl.disable(gl.CULL_FACE);
-  gl.viewport(0,0,scrW,scrH);
-  gl.clearColor(0,0,0.5,1);
+  gl.viewport(0,0,scrW*2,scrH);
+  gl.clearColor(1,1,1,1);
 
   const frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
@@ -169,7 +169,7 @@ window.addEventListener("load",_=>{
 
     void main(void){
       coord = position * resolution;
-      gl_Position = vec4(position,0.,1.);
+      gl_Position = vec4(position*vec2(0.5,1)-vec2(0.5,0),0.,1.);
     }
   `;
   const fsSource = (f,g,b)=>`
@@ -234,7 +234,7 @@ window.addEventListener("load",_=>{
     varying vec2 coord;
     void main(void){
       coord = position * 0.5 + 0.5;
-      gl_Position = vec4(position,0.,1.);
+      gl_Position = vec4(position*vec2(0.5,1)-vec2(0.5,0),0.,1.);
     }
   `;
   const bgfsSource = (f,g)=>`
@@ -292,6 +292,7 @@ window.addEventListener("load",_=>{
       screen = p;
       borderCoord = axisRatio * vec2(cos(anglePos),sin(anglePos));
       localCoord = axisLen * borderCoord;
+      p.x = 0.5 * p.x - 0.5 * p.z;
       gl_Position = vec4(p,p.z);
     }
   `;
@@ -319,11 +320,109 @@ window.addEventListener("load",_=>{
     }
   `;
 
-  let program, tprogram, bgprogram;
+  const bgavsSource = `
+    precision mediump float;
+    const float pi = 3.1415926535;
+    attribute vec2 position;
+    varying vec2 coord;
+    void main(void){
+      coord = position;
+      gl_Position = vec4(position*vec2(0.5,4.0/3.0*5.0/8.0)+vec2(0.5,0),0.,1.);
+    }
+  `;
+  const bgafsSource = `
+    precision mediump float;
+    const float pi = 3.1415926535;
+    varying vec2 coord;
+    uniform sampler2D worldTex;
+
+    void main(void){
+      vec3 pos;
+      pos.x = 0.8 * cos(coord.x * pi) + 0.5 * cos(coord.y * pi) * cos(coord.x * pi);
+      pos.y = 0.5 * sin(coord.y * pi);
+      pos.z = 0.8 * sin(coord.x * pi) + 0.5 * cos(coord.y * pi) * sin(coord.x * pi);
+      vec3 color = pos*0.2+0.8;
+      gl_FragColor = vec4(color,1);
+    }
+  `;
+  const tavsSource = `
+    precision mediump float;
+    const float pi = 3.1415926535;
+    attribute vec3 position;
+    attribute float axisRatio;
+    attribute float axisLen;
+    attribute float anglePos;
+    varying vec3 coord;
+    varying vec2 screen;
+    varying vec2 borderCoord;
+    varying vec2 localCoord;
+    uniform vec3 camera;
+    uniform mat3 transform;
+    uniform float fov;
+    uniform float projFactor;
+    uniform vec3 centerPlane;
+    uniform vec2 translate;
+    void main(void){
+      coord = position * projFactor;
+      vec3 p = transform * (coord - camera);
+      p.x *= 3./4.;
+      p.xy /= tan(fov*pi/180.);
+      p = coord;
+      borderCoord = axisRatio * vec2(cos(anglePos),sin(anglePos));
+      localCoord = axisLen * borderCoord;
+      float aux = atan(p.z,p.x);
+      vec3 relP = p - vec3(cos(aux),0,sin(aux)) * 0.8;
+      float relY = dot(relP,vec3(0,1,0));
+      float relX = dot(relP,vec3(cos(aux),0,sin(aux)));
+      float auy = atan(relY,relX);
+      vec2 pos = vec2(aux/pi,auy/pi);
+
+      vec3 cp = centerPlane;
+      float caux = atan(cp.z,cp.x);
+      vec3 crelP = cp - vec3(cos(caux),0,sin(caux)) * 0.8;
+      float crelY = dot(crelP,vec3(0,1,0));
+      float crelX = dot(crelP,vec3(cos(caux),0,sin(caux)));
+      float cauy = atan(crelY,crelX);
+      vec2 cpos = vec2(caux/pi,cauy/pi);
+
+      if(abs(pos.x+2.-cpos.x) < abs(pos.x-cpos.x))pos.x += 2.;
+      else if(abs(pos.x-2.-cpos.x) < abs(pos.x-cpos.x))pos.x -= 2.;
+      if(abs(pos.y+2.-cpos.y) < abs(pos.y-cpos.y))pos.y += 2.;
+      else if(abs(pos.y-2.-cpos.y) < abs(pos.y-cpos.y))pos.y -= 2.;
+
+      pos += translate;
+      screen = pos;
+
+      gl_Position = vec4(pos*vec2(0.5,4.0/3.0*5.0/8.0)+vec2(0.5,0),0,1);
+    }
+  `;
+  const tafsSource = `
+    precision mediump float;
+    const float pi = 3.1415926535;
+    varying vec3 coord;
+    varying vec2 screen;
+    varying vec2 borderCoord;
+    varying vec2 localCoord;
+    uniform vec3 camera;
+    uniform float hue;
+    uniform sampler2D worldTex;
+    void main(void){
+      if(abs(screen.x) > 1. || abs(screen.y) > 1.)discard;
+      vec3 color = cos(vec3(1,0,-1)*pi*2./3. + hue*pi*2.) * 0.5 + 0.5;
+      color += coord * 0.4;
+      float factor = 1.;
+      if(length(borderCoord) > 0.9) factor = 0.5;
+      if(abs(localCoord.x) < 0.01 && localCoord.y < 0.01) factor = 0.5;
+      gl_FragColor = vec4(color*factor,1);
+    }
+  `;
+
+  let program, tprogram, taprogram, bgprogram, bgaprogram;
   let resLocation;
   let camLocation, transLocation, fovLocation;
   let tcamLocation, ttransLocation, tfovLocation, thueLocation, tprojFactorLocation;
-  let bgworldTexLocation, tworldTexLocation;
+  let tacamLocation, tatransLocation, tafovLocation, tahueLocation, taprojFactorLocation, tacenterPlaneLocation, tatranslateLocation;
+  let bgworldTexLocation, bgaworldTexLocation, tworldTexLocation, taworldTexLocation;
 
   let origin = [0,0,0];
   let adir = 0.8, rdir = 0, cameraDist = 6;
@@ -512,6 +611,56 @@ window.addEventListener("load",_=>{
     gl.enableVertexAttribArray(1);
     gl.enableVertexAttribArray(2);
     gl.enableVertexAttribArray(3);
+
+    // World (for Atlas) rendering
+    const bgavs = makeShader(gl.VERTEX_SHADER,bgavsSource);
+    const bgafs = makeShader(gl.FRAGMENT_SHADER,bgafsSource);
+    if(!bgavs || !bgafs)return;
+    bgaprogram = makeProgram(bgavs,bgafs);
+    if(!bgaprogram)return;
+    gl.useProgram(bgaprogram);
+
+    gl.bindTexture(gl.TEXTURE_2D,worldTexture);
+    gl.activeTexture(gl.TEXTURE0);
+    bgaworldTexLocation = gl.getUniformLocation(bgaprogram,"worldTex");
+    gl.uniform1i(bgaworldTexLocation,0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+    gl.bindAttribLocation(bgaprogram,0,"position");
+    gl.enableVertexAttribArray(0);
+
+    // Triangle (for Atlas) rendering
+    const tavs = makeShader(gl.VERTEX_SHADER,tavsSource);
+    const tafs = makeShader(gl.FRAGMENT_SHADER,tafsSource);
+    if(!tavs || !tafs)return;
+    taprogram = makeProgram(tavs,tafs);
+    if(!taprogram)return;
+    gl.useProgram(taprogram);
+
+    tacamLocation = gl.getUniformLocation(taprogram,"camera");
+    tatransLocation = gl.getUniformLocation(taprogram,"transform");
+    tafovLocation = gl.getUniformLocation(taprogram,"fov");
+    taworldTexLocation = gl.getUniformLocation(taprogram,"worldTex");
+    tahueLocation = gl.getUniformLocation(taprogram,"hue");
+    taprojFactorLocation = gl.getUniformLocation(taprogram,"projFactor");
+    tacenterPlaneLocation = gl.getUniformLocation(taprogram,"centerPlane");
+    tatranslateLocation = gl.getUniformLocation(taprogram,"translate");
+    gl.uniform1i(taworldTexLocation,0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
+    const lc3a = gl.getAttribLocation(taprogram,"anglePos");
+    if(lc3a != 3){
+      console.err("Deficient attributes");
+      return;
+    }
+    gl.bindAttribLocation(taprogram,0,"position");
+    gl.bindAttribLocation(taprogram,1,"axisRatio");
+    gl.bindAttribLocation(taprogram,2,"axisLen");
+    gl.bindAttribLocation(taprogram,3,"anglePos");
+    gl.enableVertexAttribArray(0);
+    gl.enableVertexAttribArray(1);
+    gl.enableVertexAttribArray(2);
+    gl.enableVertexAttribArray(3);
   };
   setBounds = (b,g)=>{
     boundary = p=>{
@@ -569,6 +718,12 @@ window.addEventListener("load",_=>{
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 
     gl.useProgram(bgprogram);
+    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
+    gl.enableVertexAttribArray(0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+
+    gl.useProgram(bgaprogram);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);
     gl.enableVertexAttribArray(0);
@@ -726,8 +881,8 @@ window.addEventListener("load",_=>{
       tverts[tIndex+5] = r;
       tIndex += 6;
     }
-    function drawTriangles(hue,projFactor){
-      if(!tprogram)return;
+    function drawTriangles(hue,projFactor,cx,cy,cz){
+      if(!tprogram || !taprogram)return;
       gl.useProgram(tprogram);
       gl.uniform3f(tcamLocation,camera[0],camera[1],camera[2]);
       gl.uniformMatrix3fv(ttransLocation,false,transformI);
@@ -741,6 +896,25 @@ window.addEventListener("load",_=>{
       gl.vertexAttribPointer(3,1,gl.FLOAT,false,24,20);
       gl.bufferSubData(gl.ARRAY_BUFFER,0,tverts);
       gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
+
+      gl.useProgram(taprogram);
+      gl.uniform3f(tacamLocation,camera[0],camera[1],camera[2]);
+      gl.uniformMatrix3fv(tatransLocation,false,transformI);
+      gl.uniform1f(tafovLocation,fov);
+      gl.uniform1f(tahueLocation,hue);
+      gl.uniform1f(taprojFactorLocation,projFactor);
+      gl.uniform3f(tacenterPlaneLocation,cx,cy,cz);
+      gl.bindBuffer(gl.ARRAY_BUFFER,tvbo);
+      gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);
+      gl.vertexAttribPointer(1,1,gl.FLOAT,false,24,12);
+      gl.vertexAttribPointer(2,1,gl.FLOAT,false,24,16);
+      gl.vertexAttribPointer(3,1,gl.FLOAT,false,24,20);
+      for(let i=-1;i<2;i++){
+        for(let j=-1;j<2;j++){
+          gl.uniform2f(tatranslateLocation,i*2,j*2);
+          gl.drawArrays(gl.TRIANGLES,0,angleCount*(2*proceedCount-1)*3);
+        }
+      }
     };
     let indices = Object.keys(objects);
     indices.forEach(ix=>{
@@ -751,7 +925,7 @@ window.addEventListener("load",_=>{
           vertex(v.wx,v.wy,v.wz,v.r,v.a,v.t);
         });
       });
-      drawTriangles(hue,1);
+      drawTriangles(hue,1,o.x,o.y,o.z);
       if(projective)drawTriangles(hue,-1);
       tIndex = 0;
     });

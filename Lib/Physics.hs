@@ -1,5 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Lib.Physics (
   module Lib.Physics.Types,
@@ -15,6 +16,7 @@ import qualified "mtl" Control.Monad.State as S
 import qualified Data.Array as A
 import Data.Traversable
 import Data.Maybe
+import Haste.Foreign
 
 dt :: R
 dt = 0.2
@@ -144,20 +146,34 @@ collide d1 d2 = do
   c <- collide' d1 d2'
   return $ c & local2 %~ flipLocal (i,j) & normal2 %~ flipLocal (i,j)
 
+mouseContact :: Int -> IO [Local]
+mouseContact = ffi "mouseContact";
+
 generateConstraints :: S.StateT World IO [Constraint]
 generateConstraints = do
   a <- use id
   let (s,f) = A.bounds a
   fmap concat $ for [s..f] $ \i1 -> do
-    fmap concat $ for [i1+1..f] $ \i2 -> do
+    Just o1 <- preuse $ ix i1
+    colls <- for [i1+1..f] $ \i2 -> do
+      Just o2 <- preuse $ ix i2
       let
-        d1 = a ^?! ix i1
-        d2 = a ^?! ix i2
-        cs = collide d1 d2
+        cs = collide o1 o2
         f (ContactPoint l1 l2 n1 n2 d) = Constraint i1 i2 j1 j2 d where
           j1 = Coord (n1^.x) (n1^.y) (cross l1 n1)
           j2 = Coord (n2^.x) (n2^.y) (cross l2 n2)
       return $ map f cs
+    mouseCon <- do
+      cs <- io $ mouseContact i1
+      return $ cs >>= \w2 -> let
+          w1 = Local (o1^.coord.x) (o1^.coord.y)
+          v = w2 - w1
+          d = norm v
+          n = v * scale (1/d)
+          j1 = Coord (n^.x) (n^.y) 0
+          c = Constraint i1 i1 j1 0 d
+        in [c]
+    return $ mouseCon ++ concat colls
 
 solveConstraints :: [Constraint] -> S.StateT World IO ()
 solveConstraints cs = replicateM_ 5 $ for cs $ \c -> do

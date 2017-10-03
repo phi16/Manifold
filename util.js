@@ -2,6 +2,7 @@ let scrW = 0, scrH = 0;
 let refresh = _=>_;
 let drawCircle = _=>_;
 let draw = _=>_;
+let mouseContact = _=>_;
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
   scrW = 600;
@@ -196,24 +197,34 @@ window.addEventListener("load",_=>{
   let grabWorld = false, grabObject = null, grabFlipped = false;
   let prevMouseX = null, prevMouseY;
   cvs.addEventListener("mousedown",e=>{
-    prevMouseX = e.offsetX;
-    prevMouseY = e.offsetY;
-    let d = -1;
-    if(d != -1){
-      // collide to the world
-      let collide = null;
-      if(collide){
-        grabObject = collide;
-      }else{
-        grabWorld = true;
+    let eoX = e.offsetX - scrW;
+    let eoY = e.offsetY - (450 - scrH) / 2;
+    prevMouseX = eoX;
+    prevMouseY = eoY;
+    let collide = null;
+    for(let i=0;i<3;i++){
+      let o = objects[i];
+      let dx = o.x - eoX;
+      let dy = o.y - (scrH-eoY);
+      let dr = o.r;
+      if(dx*dx+dy*dy <= dr*dr){
+        collide = {
+          ix:i,
+          x:eoX,y:scrH-eoY
+        };
       }
+    }
+    if(collide){
+      grabObject = collide;
     }else{
       grabWorld = true;
     }
   });
   cvs.addEventListener("mousemove",e=>{
-    let dx = e.offsetX - prevMouseX;
-    let dy = e.offsetY - prevMouseY;
+    let eoX = e.offsetX - scrW;
+    let eoY = e.offsetY - (450 - scrH) / 2;
+    let dx = eoX - prevMouseX;
+    let dy = eoY - prevMouseY;
     if(grabWorld){
       rdirTo -= dx/80;
       adirTo += dy/80;
@@ -221,10 +232,11 @@ window.addEventListener("load",_=>{
       if(adirTo >  Math.PI/2)adirTo =  Math.PI/2;
     }
     if(grabObject){
-      //
+      grabObject.x = eoX;
+      grabObject.y = scrH-eoY;
     }
-    prevMouseX = e.offsetX;
-    prevMouseY = e.offsetY;
+    prevMouseX = eoX;
+    prevMouseY = eoY;
   });
   cvs.addEventListener("mouseup",e=>{
     grabWorld = false;
@@ -305,10 +317,6 @@ window.addEventListener("load",_=>{
     if(!aprogram)return;
     gl.useProgram(aprogram);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
-    gl.bindAttribLocation(aprogram,0,"position");
-    gl.enableVertexAttribArray(0);
-
     aresolutionLocation = gl.getUniformLocation(aprogram,"resolution");
     aworldTexLocation = gl.getUniformLocation(aprogram,"worldTex");
     gl.uniform1i(aworldTexLocation,0);
@@ -388,4 +396,13 @@ window.addEventListener("load",_=>{
     gl.uniform1f(tfovLocation,fov);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   };
+  mouseContact = (i)=>{
+    if(!grabObject)return [];
+    if(grabObject.ix != i)return [];
+    let x = grabObject.x;
+    let y = grabObject.y;
+    return [{
+      x:x, y:y
+    }];
+  }
 });

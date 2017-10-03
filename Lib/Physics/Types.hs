@@ -1,7 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Lib.Physics.Types where
 
 import Lib.Util
 import qualified Data.Array as A
+import Haste.Foreign
 
 class V2 a where
   x :: Lens' a R
@@ -58,6 +61,11 @@ instance Num Local where
 instance Arith Local where
   scale x = Local x x
   dot (Local x y) = x + y
+
+instance FromAny Local where
+  fromAny a = Local
+    <$> get a "x"
+    <*> get a "y"
 
 cross :: Local -> Local -> R
 cross (Local x1 y1) (Local x2 y2) = x1*y2 - x2*y1

@@ -24,14 +24,26 @@ const list4 = [
   {path:"tori",name:"Torus in 3D / Embedded 4D Torus"}
 ];
 window.addEventListener("load",_=>{
-  const frame = document.getElementById("frame");
+  const frame1 = document.getElementById("frame1");
+  const frame2 = document.getElementById("frame2");
   const name = document.getElementById("name");
   function addContent(target,list){
     list.forEach(l=>{
       const img = document.createElement("img");
       img.src="/Manifold/" + l.path + "/" + l.path + ".png";
       img.addEventListener("click",_=>{
-        frame.src = "/Manifold/" + l.path + "/index.html";
+        if(l.path == "tori"){
+          frame1.src = "/Manifold/" + l.path + "/index1.html"
+          frame2.src = "/Manifold/" + l.path + "/index2.html"
+          frame2.style.display = "block";
+          frame1.className = "po";
+          frame2.className = "po";
+        }else{
+          frame1.src = "/Manifold/" + l.path + "/index.html";
+          frame2.style.display = "none";
+          frame1.className = "";
+          frame2.className = "";
+        }
         name.textContent = l.name;
       });
       target.appendChild(img);

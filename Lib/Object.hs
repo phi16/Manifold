@@ -207,7 +207,7 @@ make (Shape s) rho c v ra = let
     mass = integrate 1 * rho  -- 1 * J = r^1
     inertia = integrate 3 * rho -- r^2 * J = r^3
     mi = Pos (scale (1/mass)) (Rotate (1/inertia))
-    g = Gravity $ \p -> World 0 0 (-4)
+    g = Gravity $ \p -> (scale 2 *) $ normalize $ World (p^.x) 0 (p^.z)
   in fitO $ Object (Shape s) g mi c v ra 0 nullValue nullValue 0
 
 generatePolygon :: Object -> ([Polygon R], [Vertex R], R)

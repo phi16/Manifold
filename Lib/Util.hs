@@ -8,7 +8,7 @@ module Lib.Util (
   R, Density,
   (+~), (*~), fmod,
   scrW, scrH, refresh,
-  drawCircle, drawRect, drawContact,
+  drawCircle, draw,
   io,
   run
 ) where
@@ -45,10 +45,8 @@ refresh :: IO ()
 refresh = ffi "refresh"
 drawCircle :: R -> R -> R -> R -> IO ()
 drawCircle = ffi "drawCircle"
-drawRect :: R -> R -> R -> R -> R -> IO ()
-drawRect = ffi "drawRect"
-drawContact :: R -> R -> R -> R -> R -> IO ()
-drawContact = ffi "drawContact"
+draw :: IO ()
+draw = ffi "draw"
 
 io :: MonadIO m => IO a -> m a
 io = liftIO

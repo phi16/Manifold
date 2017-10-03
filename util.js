@@ -1,13 +1,12 @@
 let scrW = 0, scrH = 0;
 let refresh = _=>_;
 let drawCircle = _=>_;
-let drawRect = _=>_;
-let drawContact = _=>_;
+let draw = _=>_;
 window.addEventListener("load",_=>{
   const cvs = document.getElementById("canvas");
   const ctx = cvs.getContext('2d');
-  scrW = cvs.width;
-  scrH = cvs.height;
+  scrW = 600;
+  scrH = 600*5/8;
 
   let cnt = 0;
   let colors = [
@@ -36,28 +35,7 @@ window.addEventListener("load",_=>{
     //ctx.stroke();
     cnt++;
   };
-  drawRect = (x,y,t,w,h)=>{
-    ctx.strokeStyle = "#000";
-    ctx.fillStyle = colors[Math.floor(cnt/9)];
-    ctx.save();
-    ctx.beginPath();
-    ctx.translate(x,y);
-    ctx.rotate(t);
-    ctx.rect(-w/2,-h/2,w,h);
-    ctx.stroke();
-    ctx.fill();
-    ctx.restore();
-    cnt++;
-  };
-  drawContact = (x,y,vx,vy,d)=>{
-    ctx.fillStyle = "#f00";
-    ctx.strokeStyle = "#f00";
-    ctx.beginPath();
-    ctx.arc(x,y,2,0,Math.PI*2,1);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(x,y);
-    ctx.lineTo(x+vx*d,y+vy*d);
-    ctx.stroke();
+  draw = _=>{
+
   };
 });

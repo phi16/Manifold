@@ -157,14 +157,6 @@ generateConstraints = do
         f (ContactPoint l1 l2 n1 n2 d) = Constraint i1 i2 j1 j2 d where
           j1 = Coord (n1^.x) (n1^.y) (cross l1 n1)
           j2 = Coord (n2^.x) (n2^.y) (cross l2 n2)
-      for cs $ \(ContactPoint l1 l2 n1 n2 d) -> do
-        let
-          x1 = d1^.coord.x + l1^.x
-          y1 = d1^.coord.y + l1^.y
-          x2 = d2^.coord.x + l2^.x
-          y2 = d2^.coord.y + l2^.y
-        io $ drawContact x1 y1 (n1^.x) (n1^.y) d
-        io $ drawContact x2 y2 (-n2^.x) (-n2^.y) d
       return $ map f cs
 
 solveConstraints :: [Constraint] -> S.StateT World IO ()

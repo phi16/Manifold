@@ -15,10 +15,12 @@ const list2 = [
   {path:"horn1",name:"Horn"}
 ];
 const list3 = [
-  {path:"proj",name:"Projective Plane"},
-  {path:"projtorus",name:"Projective Torus"}
+  {path:"proj1",name:"Projective Plane"},
+  {path:"projtorus1",name:"Projective Torus"}
 ];
 const list4 = [
+  {path:"proj",name:"Projective Plane"},
+  {path:"projtorus",name:"Projective Torus"},
   {path:"tori",name:"Torus in 3D / Embedded 4D Torus"}
 ];
 window.addEventListener("load",_=>{

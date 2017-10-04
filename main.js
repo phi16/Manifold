@@ -21,7 +21,7 @@ const list3 = [
 const list4 = [
   {path:"proj",name:"Projective Plane"},
   {path:"projtorus",name:"Projective Torus"},
-  {path:"tori",name:"Torus in 3D / Embedded 4D Torus"}
+  {path:"tori",name:"3D Torus / 4D Torus Embedded in 3D"}
 ];
 window.addEventListener("load",_=>{
   const frame1 = document.getElementById("frame1");

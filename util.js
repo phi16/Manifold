@@ -104,7 +104,7 @@ window.addEventListener("load",_=>{
     uniform sampler2D worldTex;
     uniform vec2 resolution;
     void main(void){
-      vec2 tc = texCoord * vec2(1200,450) / resolution / 2.;
+      vec2 tc = texCoord;
       vec3 color = texture2D(worldTex,tc).rgb;
       gl_FragColor = vec4(color,1);
     }
@@ -171,7 +171,6 @@ window.addEventListener("load",_=>{
         float relX = dot(relP,vec3(cos(aux),0,sin(aux)));
         float auy = atan(relY,relX);
         vec2 pp = vec2(aux/pi,auy/pi)*0.5+0.5;
-        pp *= vec2(1200,450) / vec2(600,600.*5./8.) / 2.;
         vec3 col = texture2D(worldTex,pp).rgb;
         gl_FragColor = vec4(col,1);
       }else{
@@ -368,6 +367,7 @@ window.addEventListener("load",_=>{
   draw = _=>{
     if(!program)return;
     setCamera();
+    gl.viewport(0,0,scrW*2,scrH*2);
     gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
@@ -380,6 +380,7 @@ window.addEventListener("load",_=>{
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 
+    gl.viewport(0,0,1200,450);
     gl.useProgram(aprogram);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);

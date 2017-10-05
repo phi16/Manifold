@@ -36,7 +36,7 @@ initial = do
     o3 = make (circle 0.3) 1.2 (Pos p3 0) 0 ra
     o4 = make (square 0.3) 1.2 (Pos p4 0) 0 ra
     o5 = make (circle 0.3) 1.2 (Pos p5 0) 0 ra
-    ls = [o1,o2,o3,o4,o5]
+    ls = [o1,o2,o3,o4]
   return $ listArray (0,length ls-1) ls
 
 step :: State -> IO State

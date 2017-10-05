@@ -20,8 +20,8 @@ window.addEventListener("load",_=>{
   const worldTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D,worldTexture);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,scrW*2,scrH*2,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,worldTexture,0);
@@ -60,6 +60,7 @@ window.addEventListener("load",_=>{
       vec3 color = pos*0.2+0.8;
 
       vec2 p = physCoord;
+      float eps = 0.5, eeps = 0.02;
       for(int i=0;i<3;i++){
         float hue = float(i)/3.;
         vec3 col = cos(vec3(1,0,-1)*pi*2./3. + hue*pi*2.) * 0.5 + 0.5;
@@ -71,12 +72,12 @@ window.addEventListener("load",_=>{
             float t = circle[i].z;
             float r = circle[i].w;
             float l = length(relP);
-            if(l < r){
+            if(l < r + eps){
               float factor = 1.;
-              if(l > r*0.9)factor = 0.5;
+              if(l + eps > r*0.9)factor = mix(factor, 0.5, smoothstep(-eps,eps,l-r*0.9));
               vec2 lc = relP * mat2(cos(t),-sin(t),sin(t),cos(t)) / r;
-              if(abs(lc.x) < 0.05 && lc.y < 0.01)factor = 0.5;
-              color = col * factor;
+              if(abs(lc.x) < 0.05 + eeps && lc.y < 0.01 + eeps)factor = mix(factor, 0.5, smoothstep(-eeps,eeps,min(0.05-abs(lc.x),0.01-lc.y)));
+              color = mix(color, col * factor, smoothstep(-eps,eps,r-l));
             }
           }
         }
@@ -103,7 +104,7 @@ window.addEventListener("load",_=>{
     uniform sampler2D worldTex;
     uniform vec2 resolution;
     void main(void){
-      vec2 tc = texCoord * vec2(1200,450) / resolution / 2.;
+      vec2 tc = texCoord;
       vec3 color = texture2D(worldTex,tc).rgb;
       gl_FragColor = vec4(color,1);
     }
@@ -170,7 +171,6 @@ window.addEventListener("load",_=>{
         float relX = dot(relP,vec3(cos(aux),0,sin(aux)));
         float auy = atan(relY,relX);
         vec2 pp = vec2(aux/pi,auy/pi)*0.5+0.5;
-        pp *= vec2(1200,450) / vec2(600,600.*5./8.) / 2.;
         vec3 col = texture2D(worldTex,pp).rgb;
         gl_FragColor = vec4(col,1);
       }else{
@@ -367,6 +367,7 @@ window.addEventListener("load",_=>{
   draw = _=>{
     if(!program)return;
     setCamera();
+    gl.viewport(0,0,scrW*2,scrH*2);
     gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffer);
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
@@ -379,6 +380,7 @@ window.addEventListener("load",_=>{
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 
+    gl.viewport(0,0,1200,450);
     gl.useProgram(aprogram);
     gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.vertexAttribPointer(0,2,gl.FLOAT,false,8,0);

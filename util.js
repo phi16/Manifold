@@ -60,6 +60,7 @@ window.addEventListener("load",_=>{
       vec3 color = pos*0.2+0.8;
 
       vec2 p = physCoord;
+      float eps = 0.5, eeps = 0.02;
       for(int i=0;i<3;i++){
         float hue = float(i)/3.;
         vec3 col = cos(vec3(1,0,-1)*pi*2./3. + hue*pi*2.) * 0.5 + 0.5;
@@ -71,12 +72,12 @@ window.addEventListener("load",_=>{
             float t = circle[i].z;
             float r = circle[i].w;
             float l = length(relP);
-            if(l < r){
+            if(l < r + eps){
               float factor = 1.;
-              if(l > r*0.9)factor = 0.5;
+              if(l + eps > r*0.9)factor = mix(factor, 0.5, smoothstep(-eps,eps,l-r*0.9));
               vec2 lc = relP * mat2(cos(t),-sin(t),sin(t),cos(t)) / r;
-              if(abs(lc.x) < 0.05 && lc.y < 0.01)factor = 0.5;
-              color = col * factor;
+              if(abs(lc.x) < 0.05 + eeps && lc.y < 0.01 + eeps)factor = mix(factor, 0.5, smoothstep(-eeps,eeps,min(0.05-abs(lc.x),0.01-lc.y)));
+              color = mix(color, col * factor, smoothstep(-eps,eps,r-l));
             }
           }
         }

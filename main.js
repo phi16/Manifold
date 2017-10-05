@@ -1,24 +1,26 @@
 const list1 = [
   {path:"plane",name:"Plane"},
   {path:"disc",name:"Disc"},
+  {path:"horn2d",name:"Horn 2D"},
   {path:"hemi",name:"Hemisphere"},
   {path:"sphere",name:"Sphere"},
   {path:"torus",name:"Torus"},
-  {path:"horn",name:"Horn"}
 ];
 const list2 = [
   {path:"plane1",name:"Plane"},
   {path:"disc1",name:"Disc"},
+  {path:"horn2d1",name:"Horn 2D"},
   {path:"hemi1",name:"Hemisphere"},
   {path:"sphere1",name:"Sphere"},
   {path:"torus1",name:"Torus"},
-  {path:"horn1",name:"Horn"}
 ];
 const list3 = [
+  {path:"horn1",name:"Horn"},
   {path:"proj1",name:"Projective Plane"},
   {path:"projtorus1",name:"Projective Torus"}
 ];
 const list4 = [
+  {path:"horn",name:"Horn"},
   {path:"proj",name:"Projective Plane"},
   {path:"projtorus",name:"Projective Torus"},
   {path:"tori",name:"3D Torus / 4D Torus Embedded in 3D"}
